@@ -3,6 +3,7 @@ import collections as col
 bracket_left = "([{<ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 bracket_right = ")]}>abcdefghijklmnopqrstuvwxyz"
 
+
 def inverse_brackets(bracket):
     res = col.defaultdict(int)
     for i, a in enumerate(bracket):

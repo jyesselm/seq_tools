@@ -7,7 +7,7 @@ from seq_tools import data_frame
 def is_seq_or_csv(input):
     input = input.upper()
     for e in input:
-        if e == 'A' or e == 'C' or e == 'G' or e == 'U' or e == 'T' or e == 'N':
+        if e == "A" or e == "C" or e == "G" or e == "U" or e == "T" or e == "N":
             continue
         else:
             return "CSV"
@@ -67,8 +67,7 @@ def process_args(p):
     return df
 
 
-
-@click.command('a simple command for manipulating rna and dna sequences in dataframes')
+@click.command("a simple command for manipulating rna and dna sequences in dataframes")
 @click.argument("input")
 @click.option("-ss", required=False, default=None)
 @click.option("-c", "--calc", required=False, default=None)

@@ -140,4 +140,3 @@ def remove_t7(df):
             continue
         seqs.append(row["sequence"][20:])
     df["sequence"] = seqs
-

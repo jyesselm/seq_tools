@@ -16,24 +16,25 @@ def get_base_dir():
 
 def get_default_args():
     p = {
-        "ss"       : None,
-        "trim5"    : None,
-        "trim3"    : None,
-        "add5"     : None,
-        "add3"     : None,
-        "output"   : "output.csv",
-        "to_rna"   : False,
-        "to_dna"   : False,
+        "ss": None,
+        "trim5": None,
+        "trim3": None,
+        "add5": None,
+        "add3": None,
+        "output": "output.csv",
+        "to_rna": False,
+        "to_dna": False,
         "remove_t7": False,
-        "add_t7"   : False,
-        "ds"       : None,
-        "fold"     : False,
-        "calc"     : None
+        "add_t7": False,
+        "ds": None,
+        "fold": False,
+        "calc": None,
     }
     return p
 
 
 # tests ##############################################################################
+
 
 def test_seq_len():
     p = get_default_args()
@@ -78,9 +79,9 @@ def test_csv_convert_to_dna():
     df = seq_tools.process_args(p)
     row = df.loc[1]
     assert (
-            row["sequence"]
-            == "TTCTAATACGACTCACTATAGATATGGATGATTAGGACATGCATTGCTGAGGGGAAACTTTTTGCAATGCAACAG"
-               "CCAAATCGTCCTAAGTC"
+        row["sequence"]
+        == "TTCTAATACGACTCACTATAGATATGGATGATTAGGACATGCATTGCTGAGGGGAAACTTTTTGCAATGCAACAG"
+        "CCAAATCGTCCTAAGTC"
     )
 
 
