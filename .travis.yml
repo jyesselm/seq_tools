@@ -1,17 +1,12 @@
-# Config file for automatic testing at travis-ci.org
-
 language: python
-
 python:
-  - "3.3"
-  - "2.7"
-  - "2.6"
-  - "pypy"
-
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: 
+  - "3.7"
+cache: pip
+before_install:
+  - python3 --version
+  - pip3 install -U pip
   - pip install -r requirements.txt
-
-# command to run tests, e.g. python setup.py test
+  - pip3 install -U pytest
 script:
-  - py.test
+  - python3 -m pytest
+
