@@ -27,6 +27,32 @@ def process_args(p):
     else:
         df = get_df_from_seq_and_ss(p["input"], p["ss"])
 
+    type = data_frame.get_nucleic_acid_type(df)
+    if p["remove_t7"]:
+        data_frame.remove_t7(df)
+    if p["to_rna"]:
+        data_frame.convert_to_rna(df)
+        type = "RNA"
+    if p["to_dna"]:
+        data_frame.convert_to_dna(df)
+        type = "DNA"
+    if p["add_t7"]:
+        if type != "DNA":
+            raise ValueError("cannot add t7 to RNA only to DNA")
+        data_frame.add_5p(df, "TTCTAATACGACTCACTATA")
+    if "structure" not in df.columns and type == "RNA":
+        df["structure"] = None
+    if p["trim5"] is not None:
+        data_frame.trim_5p(df, p["trim5"])
+    if p["trim3"] is not None:
+        data_frame.trim_3p(df, p["trim3"])
+
+    ds = p["ds"]
+    if ds is None:
+        if type == "DNA":
+            ds = True
+        else:
+            ds = False
     calcs = {}
     if p["calc"] is not None:
         spl = p["calc"].split(",")
@@ -35,8 +61,11 @@ def process_args(p):
 
     if "l" in calcs or "len" in calcs or "length" in calcs:
         data_frame.get_length(df)
+    if "mw" in calcs:
+        data_frame.get_molecular_weight(df, type, ds)
 
     return df
+
 
 
 @click.command('a simple command for manipulating rna and dna sequences in dataframes')
@@ -52,7 +81,7 @@ def process_args(p):
 @click.option("-to_fasta", required=False, is_flag=True, default=False)
 @click.option("-remove_t7", required=False, is_flag=True, default=False)
 @click.option("-add_t7", required=False, is_flag=True, default=False)
-@click.option("-ds", required=False, is_flag=True, default=False)
+@click.option("-ds", required=False, is_flag=True, default=None)
 @click.option("-fold", required=False, is_flag=True, default=False)
 @click.option("-avg", required=False, is_flag=True, default=False)
 def main(**p):

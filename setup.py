@@ -37,7 +37,8 @@ setup(
     ],
     package_dir={'seq_tools': 'seq_tools'},
     py_modules=[
-        'seq_tools / seq_tools.py'
+        'seq_tools/data_frame', 'seq_tools/dot_bracket', 'seq_tools/extinction_coeff',
+        'seq_tools/seq_tools', 'seq_tools/sequence'
     ],
     include_package_data=True,
     install_requires=requirements,
@@ -51,6 +52,7 @@ setup(
     ],
     entry_points = {
         'console_scripts' : [
+            'seq_tools = seq_tools.seq_tools:main',
         ]
     }
 )
