@@ -48,3 +48,7 @@ def dotbracket_to_pairtable(struct):
         raise ValueError("Too many opening brackets!")
 
     return pt
+
+
+def get_num_of_basepairs(seq, struct):
+    pass

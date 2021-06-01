@@ -1,4 +1,4 @@
-from seq_tools import sequence
+from seq_tools import sequence, extinction_coeff
 
 
 def get_nucleic_acid_type(df):
@@ -140,3 +140,34 @@ def remove_t7(df):
             continue
         seqs.append(row["sequence"][20:])
     df["sequence"] = seqs
+
+
+def get_extinction_coeff(df, type, ds):
+    ecs = []
+    for i, row in df.iterrows():
+        if type == "RNA":
+            ec = extinction_coeff.get_coefficient_rna(row["sequence"], row["structure"])
+        else:
+            ec = extinction_coeff.get_coefficient_dna(row["sequence"], ds)
+        ecs.append(ec)
+    df["extinction coeff"] = ecs
+
+
+def get_folded_structure(df):
+    try:
+        import vienna
+    except:
+        raise ValueError(
+                "to fold rnas you must use `pip install vienna`")
+    structures = []
+    mfes = []
+    ensemble_diversities = []
+    for i, row in df.iterrows():
+        vr = vienna.fold(row["sequence"])
+        structures.append(vr.dot_bracket)
+        mfes.append(vr.mfe)
+        ensemble_diversities.append(vr.ensemble_diversity)
+    df["structure"] = structures
+    df["mfe"] = mfes
+    df["ens div"] = ensemble_diversities
+    

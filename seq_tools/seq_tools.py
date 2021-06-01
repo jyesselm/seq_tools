@@ -14,26 +14,36 @@ def is_seq_or_csv(input):
     return "SEQ"
 
 
-def get_df_from_seq_and_ss(seq, ss):
+def get_df_from_seq_and_ss(seq, ss, name):
+    if name is None:
+        name = "seq"
     df = pd.DataFrame(columns="name,sequence,structure".split(","))
-    df.loc[1] = ["seq", seq, ss]
+    df.loc[0] = [name, seq, ss]
     return df
 
 
 def process_args(p):
+    if p["type"] is not None:
+        p["type"] = p["type"].upper()
+
     input_type = is_seq_or_csv(p["input"])
     if input_type == "CSV":
         df = pd.read_csv(p["input"])
     else:
-        df = get_df_from_seq_and_ss(p["input"], p["ss"])
+        df = get_df_from_seq_and_ss(p["input"], p["ss"], p["name"])
 
+    if "name" not in df:
+        names = []
+        for i, row in df.iterrows():
+            names.append(f"seq_{i}")
+        df["name"] = names
     type = data_frame.get_nucleic_acid_type(df)
     if p["remove_t7"]:
         data_frame.remove_t7(df)
-    if p["to_rna"]:
+    if p["type"] == "RNA":
         data_frame.convert_to_rna(df)
         type = "RNA"
-    if p["to_dna"]:
+    if p["type"] == "DNA":
         data_frame.convert_to_dna(df)
         type = "DNA"
     if p["add_t7"]:
@@ -46,6 +56,10 @@ def process_args(p):
         data_frame.trim_5p(df, p["trim5"])
     if p["trim3"] is not None:
         data_frame.trim_3p(df, p["trim3"])
+    if p["fold"]:
+        if type == "DNA":
+            raise ValueError("cannot fold DNA, use -t/--type RNA to convert")
+        data_frame.get_folded_structure(df)
 
     ds = p["ds"]
     if ds is None:
@@ -63,12 +77,17 @@ def process_args(p):
         data_frame.get_length(df)
     if "mw" in calcs:
         data_frame.get_molecular_weight(df, type, ds)
+    if "ec" in calcs:
+        data_frame.get_extinction_coeff(df, type, ds)
+    if "rc" in calcs:
+        data_frame.get_reverse_complement(df, type)
 
     return df
 
 
 @click.command("a simple command for manipulating rna and dna sequences in dataframes")
 @click.argument("input")
+@click.option("-n", "--name", required=False, default=None)
 @click.option("-ss", required=False, default=None)
 @click.option("-c", "--calc", required=False, default=None)
 @click.option("-t", "--type", required=False, default=None)
@@ -84,9 +103,6 @@ def process_args(p):
 @click.option("-fold", required=False, is_flag=True, default=False)
 @click.option("-avg", required=False, is_flag=True, default=False)
 def main(**p):
-    if p["to_rna"] and p["to_dna"]:
-        print("cannot use flag -to_rna and -to_dna")
-        exit()
     if p["remove_t7"] and p["add_t7"]:
         print("cannot use flag -remove_t7 and -add_t7")
         exit()
@@ -104,19 +120,19 @@ def main(**p):
             f.write(f">{row['name']}\n")
             f.write(row["sequence"] + "\n")
         f.close()
+    print(f"outputing results to csv: {p['output']}")
+    df.to_csv(p['output'], index=False)
     if len(df) == 1:
         df = df.drop(["name"], axis=1)
-        d = df.loc[1].to_dict()
+        d = df.loc[0].to_dict()
         for k, v in d.items():
             if v == False or v == None:
                 continue
             print(f"{k} : {v}")
     else:
         if "structure" is df.columns:
-            if df.loc[1]["structure"] is None:
+            if df.loc[0]["structure"] is None:
                 df = df.drop("structure", axis=1)
-        print("outputing results to csv: output.csv")
-        df.to_csv("output.csv", index=False)
         if p["avg"]:
             excess = "name,sequence,structure,rc".split(",")
             for c in excess:

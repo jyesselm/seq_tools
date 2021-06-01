@@ -22,13 +22,13 @@ def get_default_args():
         "add5": None,
         "add3": None,
         "output": "output.csv",
-        "to_rna": False,
-        "to_dna": False,
         "remove_t7": False,
         "add_t7": False,
         "ds": None,
         "fold": False,
         "calc": None,
+        "type": None,
+        "name": None
     }
     return p
 
@@ -41,9 +41,17 @@ def test_seq_len():
     p["input"] = "GGGAAACCC"
     p["calc"] = "len"
     df = seq_tools.process_args(p)
-    row = df.loc[1]
+    row = df.loc[0]
     assert "len" in df.columns
     assert row["len"] == 9
+
+
+def test_single_seq_csv():
+    p = get_default_args()
+    p["input"] = get_base_dir() + "/resources/test_short.csv"
+    p["calc"] = "len"
+    df = seq_tools.process_args(p)
+    row = df.loc[0]
 
 
 def test_csv_mw():
@@ -54,8 +62,8 @@ def test_csv_mw():
     p["calc"] = "mw"
     df = seq_tools.process_args(p)
     assert "molecular weight" in df.columns
-    row = df.loc[1]
-    assert row["molecular weight"] == 24537
+    row = df.loc[0]
+    assert row["molecular weight"] == 25795
 
 
 def test_mult_csv():
@@ -75,13 +83,13 @@ def test_csv_convert_to_dna():
     csv_path = base_dir + "/resources/test.csv"
     p["input"] = csv_path
     p["add_t7"] = True
-    p["to_dna"] = True
+    p["type"] = "DNA"
     df = seq_tools.process_args(p)
-    row = df.loc[1]
+    row = df.loc[0]
     assert (
         row["sequence"]
-        == "TTCTAATACGACTCACTATAGATATGGATGATTAGGACATGCATTGCTGAGGGGAAACTTTTTGCAATGCAACAG"
-        "CCAAATCGTCCTAAGTC"
+        == "TTCTAATACGACTCACTATAGATATGGATAGAGTAAGAGAGATGGAAGTCTCAGGGGAAACTTTGAGATGGACG"
+           "GTTTACAAGTTGTCCTAAGTC"
     )
 
 
