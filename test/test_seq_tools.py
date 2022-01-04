@@ -28,7 +28,7 @@ def get_default_args():
         "fold": False,
         "calc": None,
         "type": None,
-        "name": None
+        "name": None,
     }
     return p
 
@@ -89,7 +89,7 @@ def test_csv_convert_to_dna():
     assert (
         row["sequence"]
         == "TTCTAATACGACTCACTATAGATATGGATAGAGTAAGAGAGATGGAAGTCTCAGGGGAAACTTTGAGATGGACG"
-           "GTTTACAAGTTGTCCTAAGTC"
+        "GTTTACAAGTTGTCCTAAGTC"
     )
 
 

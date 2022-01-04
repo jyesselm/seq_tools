@@ -1,4 +1,5 @@
 from seq_tools import sequence, extinction_coeff
+import vienna
 
 
 def get_nucleic_acid_type(df):
@@ -154,11 +155,6 @@ def get_extinction_coeff(df, type, ds):
 
 
 def get_folded_structure(df):
-    try:
-        import vienna
-    except:
-        raise ValueError(
-                "to fold rnas you must use `pip install vienna`")
     structures = []
     mfes = []
     ensemble_diversities = []
@@ -170,4 +166,3 @@ def get_folded_structure(df):
     df["structure"] = structures
     df["mfe"] = mfes
     df["ens div"] = ensemble_diversities
-    

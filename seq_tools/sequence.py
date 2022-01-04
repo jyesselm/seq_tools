@@ -31,6 +31,8 @@ def get_reverse_complement(seq, type="DNA"):
     for e in seq:
         if e == "A" and type == "RNA":
             complement += "U"
+        elif e == "A" and type == "DNA":
+            complement += "T"
         elif e == "C":
             complement += "G"
         elif e == "G":
@@ -64,7 +66,7 @@ def get_molecular_weight(seq, type="DNA", double_stranded=False):
 
 
 def get_max_stretch(seq):
-    """ returns max stretch of the same letter in string """
+    """returns max stretch of the same letter in string"""
     max_stretch = 0
     last = None
     for n in seq:

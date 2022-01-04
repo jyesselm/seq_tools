@@ -2,3 +2,4 @@ wheel>=0.22
 pandas
 numpy
 click
+vienna

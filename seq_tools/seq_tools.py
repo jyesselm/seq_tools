@@ -36,7 +36,7 @@ def process_args(p):
         names = []
         for i, row in df.iterrows():
             names.append(f"seq_{i}")
-        df["name"] = names
+        df.insert(0, "name", names)
     type = data_frame.get_nucleic_acid_type(df)
     if p["remove_t7"]:
         data_frame.remove_t7(df)
@@ -85,24 +85,7 @@ def process_args(p):
     return df
 
 
-@click.command("a simple command for manipulating rna and dna sequences in dataframes")
-@click.argument("input")
-@click.option("-n", "--name", required=False, default=None)
-@click.option("-ss", required=False, default=None)
-@click.option("-c", "--calc", required=False, default=None)
-@click.option("-t", "--type", required=False, default=None)
-@click.option("-trim5", required=False, default=None)
-@click.option("-trim3", required=False, default=None)
-@click.option("-add5", required=False, default=None)
-@click.option("-add3", required=False, default=None)
-@click.option("-o", "--output", required=False, default="output.csv")
-@click.option("-to_fasta", required=False, is_flag=True, default=False)
-@click.option("-remove_t7", required=False, is_flag=True, default=False)
-@click.option("-add_t7", required=False, is_flag=True, default=False)
-@click.option("-ds", required=False, is_flag=True, default=None)
-@click.option("-fold", required=False, is_flag=True, default=False)
-@click.option("-avg", required=False, is_flag=True, default=False)
-def main(**p):
+def run_main(p):
     if p["remove_t7"] and p["add_t7"]:
         print("cannot use flag -remove_t7 and -add_t7")
         exit()
@@ -121,7 +104,7 @@ def main(**p):
             f.write(row["sequence"] + "\n")
         f.close()
     print(f"outputing results to csv: {p['output']}")
-    df.to_csv(p['output'], index=False)
+    df.to_csv(p["output"], index=False)
     if len(df) == 1:
         df = df.drop(["name"], axis=1)
         d = df.loc[0].to_dict()
@@ -130,7 +113,7 @@ def main(**p):
                 continue
             print(f"{k} : {v}")
     else:
-        if "structure" is df.columns:
+        if "structure" in df.columns:
             if df.loc[0]["structure"] is None:
                 df = df.drop("structure", axis=1)
         if p["avg"]:
@@ -146,6 +129,27 @@ def main(**p):
                     print(c + " : " + str(round(avg, 2)))
                 except:
                     pass
+
+
+@click.command("a simple command for manipulating rna and dna sequences in dataframes")
+@click.argument("input")
+@click.option("-n", "--name", required=False, default=None)
+@click.option("-ss", required=False, default=None)
+@click.option("-c", "--calc", required=False, default=None)
+@click.option("-t", "--type", required=False, default=None)
+@click.option("-trim5", required=False, default=None)
+@click.option("-trim3", required=False, default=None)
+@click.option("-add5", required=False, default=None)
+@click.option("-add3", required=False, default=None)
+@click.option("-o", "--output", required=False, default="output.csv")
+@click.option("-to_fasta", required=False, is_flag=True, default=False)
+@click.option("-remove_t7", required=False, is_flag=True, default=False)
+@click.option("-add_t7", required=False, is_flag=True, default=False)
+@click.option("-ds", required=False, is_flag=True, default=None)
+@click.option("-fold", required=False, is_flag=True, default=False)
+@click.option("-avg", required=False, is_flag=True, default=False)
+def main(**p):
+    run_main(p)
 
 
 if __name__ == "__main__":
