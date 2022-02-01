@@ -162,7 +162,7 @@ def get_folded_structure(df):
         vr = vienna.fold(row["sequence"])
         structures.append(vr.dot_bracket)
         mfes.append(vr.mfe)
-        ensemble_diversities.append(vr.ensemble_diversity)
+        ensemble_diversities.append(vr.ens_defect)
     df["structure"] = structures
     df["mfe"] = mfes
-    df["ens div"] = ensemble_diversities
+    df["ens_defect"] = ensemble_diversities

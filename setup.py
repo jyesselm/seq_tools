@@ -25,8 +25,8 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='seq_tools',
-    version='0.1.0',
+    name='rna_seq_tools',
+    version='0.2.0',
     description='simple functions for manipulating sequences and secondary structures in pandas dataframe format',
     long_description=readme + '\n\n' + doclink + '\n\n' + history,
     author='Joe Yesselman',
