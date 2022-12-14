@@ -32,6 +32,9 @@ def process_args(p):
     else:
         df = get_df_from_seq_and_ss(p["input"], p["ss"], p["name"])
 
+    # ensure sequence is all upper case
+    df['sequence'] = [s.upper() for s in df['sequence']]
+
     if "name" not in df:
         names = []
         for i, row in df.iterrows():

@@ -1,9 +1,18 @@
-def get_nucleic_acid_type(seq):
-    t = "DNA"
-    for e in seq:
-        if e == "U":
+"""
+simple functions for gathering information about a sequence.
+"""
+
+
+def get_nucleic_acid_type(seq) -> str:
+    """
+    Returns the type of nucleic acid in the sequence
+    :param seq: sequence of dna or rna
+    :return: str "DNA" or "RNA"
+    """
+    for nuc in seq:
+        if nuc == "U":
             return "RNA"
-    return t
+    return "DNA"
 
 
 def convert_to_rna(seq):
@@ -16,14 +25,11 @@ def convert_to_rna(seq):
     return new_seq
 
 
-def convert_to_dna(seq):
-    new_seq = ""
-    for e in seq:
-        if e == "U":
-            new_seq += "T"
-        else:
-            new_seq += e
-    return new_seq
+def to_dna(seq):
+    """
+    Convert RNA sequence to DNA
+    """
+    return seq.replace("U", "T")
 
 
 def get_reverse_complement(seq, type="DNA"):

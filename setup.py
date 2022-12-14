@@ -39,7 +39,9 @@ setup(
     py_modules=[
         'seq_tools/data_frame',
         'seq_tools/dot_bracket',
+        'seq_tools/cli',
         'seq_tools/extinction_coeff',
+        'seq_tools/logger',
         'seq_tools/seq_tools',
         'seq_tools/sequence'
     ],
@@ -55,7 +57,7 @@ setup(
     ],
     entry_points = {
         'console_scripts' : [
-            'seq_tools = seq_tools.seq_tools:main',
+            'seq_tools = seq_tools.cli:cli',
         ]
     }
 )
