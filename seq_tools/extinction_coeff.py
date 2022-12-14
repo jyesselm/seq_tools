@@ -1,5 +1,4 @@
 from seq_tools import dot_bracket, sequence
-import collections as col
 
 dna_di = {
     "AA": 27400,

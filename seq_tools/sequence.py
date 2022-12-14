@@ -43,41 +43,54 @@ def get_reverse_complement(seq, ntype="DNA") -> str:
     return rev_comp[::-1]
 
 
-mw_rna = {"A": 347.2, "C": 323.2, "G": 363.2, "U": 324.2}
-mw_dna = {"A": 331.2, "C": 307.2, "G": 347.2, "T": 322.2}
+def get_molecular_weight(seq, ntype="DNA", double_stranded=False) -> float:
+    """
+    returns the molecular weight of a sequence
+    :param seq: the sequence
+    :param ntype: type of sequence (DNA or RNA)
+    :param double_stranded: is the sequence double stranded?
+    :return: float
+    """
+    rna_mw = {"A": 347.2, "C": 323.2, "G": 363.2, "U": 324.2}
+    dna_mw = {"A": 331.2, "C": 307.2, "G": 347.2, "T": 322.2}
 
-
-def get_molecular_weight(seq, type="DNA", double_stranded=False):
-    total = 0
-    for e in seq:
-        if type == "RNA":
-            total += mw_rna[e]
-        else:
-            total += mw_dna[e]
-    if double_stranded:
-        rc = get_reverse_complement(seq, type)
-        for e in rc:
-            if type == "RNA":
-                total += mw_rna[e]
+    def compute_mw(seq, ntype):
+        molecular_weight = 0
+        for nuc in seq:
+            if ntype == "RNA":
+                molecular_weight += rna_mw[nuc]
             else:
-                total += mw_dna[e]
-    return total
+                molecular_weight += dna_mw[nuc]
+        return molecular_weight
+
+    # enforce RNA or DNA typing
+    if ntype == "RNA":
+        seq = to_rna(seq)
+    else:
+        seq = to_dna(seq)
+    molecular_weight = compute_mw(seq, ntype)
+    if double_stranded:
+        rev_comp = get_reverse_complement(seq, type)
+        molecular_weight += compute_mw(rev_comp, ntype)
+    return molecular_weight
 
 
-def get_max_stretch(seq):
-    """returns max stretch of the same letter in string"""
+def get_max_stretch(seq) -> float:
+    """
+    computes max stretch of the same letter in string
+    """
     max_stretch = 0
-    last = None
-    for n in seq:
-        if last == None:
-            last = n
-            stretch = 0
-            continue
-        if n == last:
-            stretch += 1
-            if stretch > max_stretch:
-                max_stretch = stretch
+    current_stretch = 0
+    for i, nuc in enumerate(seq):
+        if i == 0:
+            current_stretch += 1
         else:
-            stretch = 0
-        last = n
+            if nuc == seq[i - 1]:
+                current_stretch += 1
+            else:
+                if current_stretch > max_stretch:
+                    max_stretch = current_stretch
+                current_stretch = 1
+    if current_stretch > max_stretch:
+        max_stretch = current_stretch
     return max_stretch
