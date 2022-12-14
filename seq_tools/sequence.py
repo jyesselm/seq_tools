@@ -28,6 +28,10 @@ def get_reverse_complement(seq, ntype="DNA") -> str:
     :param ntype: type of sequence (DNA or RNA)
     :return: reverse complement of sequence
     """
+    if ntype == "RNA":
+        seq = to_rna(seq)
+    else:
+        seq = to_dna(seq)
     rev_comp = ""
     rc_dna = {"A": "T", "T": "A", "G": "C", "C": "G"}
     rc_rna = {"A": "U", "U": "A", "G": "C", "C": "G"}

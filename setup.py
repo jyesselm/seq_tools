@@ -13,13 +13,13 @@ if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
 
-readme = open('README.rst').read()
+readme = open('README.md').read()
 doclink = """
 Documentation
 -------------
 
 The full documentation is at http://seq_tools.rtfd.org."""
-history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+history = ""
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
