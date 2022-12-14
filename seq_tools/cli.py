@@ -8,6 +8,8 @@ import pandas as pd
 from seq_tools import sequence
 from seq_tools.logger import setup_applevel_logger, get_logger
 
+pd.set_option('display.max_colwidth', None)
+
 
 def validate_dataframe(df) -> None:
     """
@@ -31,12 +33,28 @@ def get_input_dataframe(data) -> pd.DataFrame:
     if os.path.isfile(data):
         log.info(f"reading file {data}")
         df = pd.read_csv(data)
+        log.info(f"csv file contains {len(df)}")
     else:
         log.info(f"reading sequence {data}")
         data_df = [["seq", data]]
         df = pd.DataFrame(data_df, columns=["name", "sequence"])
     validate_dataframe(df)
     return df
+
+
+def handle_output(df, output) -> None:
+    """
+    handles the output of the dataframe
+    :param df: dataframe with sequences
+    :param output: output file
+    :return: None
+    """
+    log = get_logger('handle_output')
+    if len(df) == 1:
+        log.info(f"output->\n{df.iloc[0]}")
+    else:
+        log.info(f"output csv: {output}")
+        df.to_csv(output, index=False)
 
 
 @click.group()
@@ -54,15 +72,26 @@ def to_dna(data, output):
     Convert RNA sequence to DNA
     """
     setup_applevel_logger()
-    log = get_logger('to_dna')
     df = get_input_dataframe(data)
+    df = df[["name", "sequence"]]
     # apply sequence.to_dna to `sequence` column
     df['sequence'] = df['sequence'].apply(sequence.to_dna)
-    if len(df) == 1:
-        log.info(f"converted sequence: {df.iloc[0]['sequence']}")
-    else:
-        log.info(f"converted sequences: {output}")
-        df.to_csv(output, index=False)
+    handle_output(df, output)
+
+
+@cli.command(help='convert rna sequence(s) to dna')
+@click.argument("data")
+@click.option("-o", "--output", help="output file", default="output.csv")
+def to_rna(data, output):
+    """
+    Convert DNA sequence to RNA
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    df = df[["name", "sequence"]]
+    # apply sequence.to_dna to `sequence` column
+    df['sequence'] = df['sequence'].apply(sequence.to_rna)
+    handle_output(df, output)
 
 
 # pylint: disable=no-value-for-parameter
