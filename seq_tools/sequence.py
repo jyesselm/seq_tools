@@ -87,6 +87,15 @@ def to_dna(seq) -> str:
     return seq.replace("U", "T")
 
 
+def to_dna_template(seq) -> str:
+    """
+    Convert RNA sequence to DNA
+    :param seq: RNA sequence
+    :return: DNA sequence
+    """
+    return "TTCTAATACGACTCACTATA" + to_dna(seq)
+
+
 def to_rna(seq) -> str:
     """
     Convert DNA sequence to RNA
