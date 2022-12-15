@@ -4,11 +4,12 @@ commandline interface for seq_tools
 import os
 import click
 import pandas as pd
+import vienna
 
 from seq_tools import sequence
 from seq_tools.logger import setup_applevel_logger, get_logger
 
-pd.set_option('display.max_colwidth', None)
+pd.set_option("display.max_colwidth", None)
 
 
 def validate_dataframe(df) -> None:
@@ -29,7 +30,7 @@ def get_input_dataframe(data) -> pd.DataFrame:
     :param data: can be a seqeunce or a file
     :return: pd.DataFrame
     """
-    log = get_logger('get_input_dataframe')
+    log = get_logger("get_input_dataframe")
     if os.path.isfile(data):
         log.info(f"reading file {data}")
         df = pd.read_csv(data)
@@ -49,7 +50,7 @@ def handle_output(df, output) -> None:
     :param output: output file
     :return: None
     """
-    log = get_logger('handle_output')
+    log = get_logger("handle_output")
     if len(df) == 1:
         log.info(f"output->\n{df.iloc[0]}")
     else:
@@ -64,7 +65,20 @@ def cli():
     """
 
 
-@cli.command(help='convert rna sequence(s) to dna')
+@click.command(help="fold rna sequences")
+@click.argument("data")
+@click.option("-o", "--output", help="output file", default="output.csv")
+def fold(data, output):
+    """
+    fold rna sequences
+    """
+    log = get_logger("fold")
+    df = get_input_dataframe(data)
+    for i, row in df.iterrows():
+        pass
+
+
+@cli.command(help="convert rna sequence(s) to dna")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
 def to_dna(data, output):
@@ -75,11 +89,11 @@ def to_dna(data, output):
     df = get_input_dataframe(data)
     df = df[["name", "sequence"]]
     # apply sequence.to_dna to `sequence` column
-    df['sequence'] = df['sequence'].apply(sequence.to_dna)
+    df["sequence"] = df["sequence"].apply(sequence.to_dna)
     handle_output(df, output)
 
 
-@cli.command(help='convert rna sequence(s) to dna')
+@cli.command(help="convert rna sequence(s) to dna")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
 def to_rna(data, output):
@@ -90,10 +104,10 @@ def to_rna(data, output):
     df = get_input_dataframe(data)
     df = df[["name", "sequence"]]
     # apply sequence.to_dna to `sequence` column
-    df['sequence'] = df['sequence'].apply(sequence.to_rna)
+    df["sequence"] = df["sequence"].apply(sequence.to_rna)
     handle_output(df, output)
 
 
 # pylint: disable=no-value-for-parameter
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

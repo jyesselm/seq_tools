@@ -1,9 +1,14 @@
 """
 module to test sequence.py
 """
+
 from seq_tools.sequence import (
-    to_dna, to_rna, get_reverse_complement, get_molecular_weight,
-    get_max_stretch)
+    to_dna,
+    to_rna,
+    get_reverse_complement,
+    get_molecular_weight,
+    get_max_stretch,
+)
 
 
 def test_to_dna():
@@ -41,7 +46,9 @@ def test_get_molecular_weight():
     assert get_molecular_weight("AUG", "RNA") == 1034.6
     assert get_molecular_weight("CAU", "RNA") == 994.5999999999999
     assert get_molecular_weight("ATGATGATG") == 3001.7999999999997
-    assert get_molecular_weight("ATGATGATGATG", double_stranded=True) == 7844.799999999998
+    assert (
+        get_molecular_weight("ATGATGATGATG", double_stranded=True) == 7844.799999999998
+    )
 
 
 def test_get_max_stretch():

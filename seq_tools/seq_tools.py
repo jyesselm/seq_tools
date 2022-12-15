@@ -1,7 +1,7 @@
 import click
 import pandas as pd
 import numpy as np
-from seq_tools import data_frame
+from seq_tools import dataframe
 
 
 def is_seq_or_csv(input):

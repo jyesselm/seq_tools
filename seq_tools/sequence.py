@@ -3,44 +3,25 @@ simple functions for gathering information about a sequence.
 """
 
 
-def to_dna(seq) -> str:
+def get_max_stretch(seq) -> float:
     """
-    Convert RNA sequence to DNA
-    :param seq: RNA sequence
-    :return: DNA sequence
+    computes max stretch of the same letter in string
     """
-    return seq.replace("U", "T")
-
-
-def to_rna(seq) -> str:
-    """
-    Convert DNA sequence to RNA
-    :param seq: DNA sequence
-    :return: RNA sequence
-    """
-    return seq.replace("T", "U")
-
-
-def get_reverse_complement(seq, ntype="DNA") -> str:
-    """
-    returns the reverse complement of a sequence
-    :param seq: sequence to reverse complement
-    :param ntype: type of sequence (DNA or RNA)
-    :return: reverse complement of sequence
-    """
-    if ntype == "RNA":
-        seq = to_rna(seq)
-    else:
-        seq = to_dna(seq)
-    rev_comp = ""
-    rc_dna = {"A": "T", "T": "A", "G": "C", "C": "G"}
-    rc_rna = {"A": "U", "U": "A", "G": "C", "C": "G"}
-    for nuc in seq:
-        if ntype == "RNA":
-            rev_comp += rc_rna[nuc]
+    max_stretch = 0
+    current_stretch = 0
+    for i, nuc in enumerate(seq):
+        if i == 0:
+            current_stretch += 1
         else:
-            rev_comp += rc_dna[nuc]
-    return rev_comp[::-1]
+            if nuc == seq[i - 1]:
+                current_stretch += 1
+            else:
+                if current_stretch > max_stretch:
+                    max_stretch = current_stretch
+                current_stretch = 1
+    if current_stretch > max_stretch:
+        max_stretch = current_stretch
+    return max_stretch
 
 
 def get_molecular_weight(seq, ntype="DNA", double_stranded=False) -> float:
@@ -75,22 +56,41 @@ def get_molecular_weight(seq, ntype="DNA", double_stranded=False) -> float:
     return molecular_weight
 
 
-def get_max_stretch(seq) -> float:
+def get_reverse_complement(seq, ntype="DNA") -> str:
     """
-    computes max stretch of the same letter in string
+    returns the reverse complement of a sequence
+    :param seq: sequence to reverse complement
+    :param ntype: type of sequence (DNA or RNA)
+    :return: reverse complement of sequence
     """
-    max_stretch = 0
-    current_stretch = 0
-    for i, nuc in enumerate(seq):
-        if i == 0:
-            current_stretch += 1
+    if ntype == "RNA":
+        seq = to_rna(seq)
+    else:
+        seq = to_dna(seq)
+    rev_comp = ""
+    rc_dna = {"A": "T", "T": "A", "G": "C", "C": "G"}
+    rc_rna = {"A": "U", "U": "A", "G": "C", "C": "G"}
+    for nuc in seq:
+        if ntype == "RNA":
+            rev_comp += rc_rna[nuc]
         else:
-            if nuc == seq[i - 1]:
-                current_stretch += 1
-            else:
-                if current_stretch > max_stretch:
-                    max_stretch = current_stretch
-                current_stretch = 1
-    if current_stretch > max_stretch:
-        max_stretch = current_stretch
-    return max_stretch
+            rev_comp += rc_dna[nuc]
+    return rev_comp[::-1]
+
+
+def to_dna(seq) -> str:
+    """
+    Convert RNA sequence to DNA
+    :param seq: RNA sequence
+    :return: DNA sequence
+    """
+    return seq.replace("U", "T")
+
+
+def to_rna(seq) -> str:
+    """
+    Convert DNA sequence to RNA
+    :param seq: DNA sequence
+    :return: RNA sequence
+    """
+    return seq.replace("T", "U")
