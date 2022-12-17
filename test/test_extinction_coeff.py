@@ -2,27 +2,34 @@
 test extinction coefficient module
 """
 
-import pytest
 from seq_tools.extinction_coeff import get_extinction_coeff
 
 
 def test_ds_dna():
+    """
+    test double stranded DNA extinction coefficient
+    """
     seq = "ACGT"
     c = get_extinction_coeff(seq, "DNA", True)
-    # no longer getting this value??
-    # assert c == 59627
+    assert c == 66656
 
 
 def test_rna():
+    """
+    test RNA extinction coefficient
+    """
     seq = "ACGU"
     c = get_extinction_coeff(seq, "RNA")
     assert c == 41500
 
 
 def test_rna_ss():
+    """
+    test single stranded RNA extinction coefficient
+    """
     seq = "AAAAAAAAUUUU"
     ss = "((((....))))"
-    c1 = get_extinction_coeff(seq, "RNA")
-    assert c1 == 137100
-    c2 = get_extinction_coeff(seq, "RNA", structure=ss)
-    assert c2 == 113336
+    c = get_extinction_coeff(seq, "RNA")
+    assert c == 137100
+    c = get_extinction_coeff(seq, "RNA", structure=ss)
+    assert c == 113336
