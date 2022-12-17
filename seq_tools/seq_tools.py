@@ -33,7 +33,7 @@ def process_args(p):
         df = get_df_from_seq_and_ss(p["input"], p["ss"], p["name"])
 
     # ensure sequence is all upper case
-    df['sequence'] = [s.upper() for s in df['sequence']]
+    df["sequence"] = [s.upper() for s in df["sequence"]]
 
     if "name" not in df:
         names = []
@@ -134,7 +134,9 @@ def run_main(p):
                     pass
 
 
-@click.command("a simple command for manipulating rna and dna sequences in dataframes")
+@click.command(
+    "a simple command for manipulating rna and dna sequences in dataframes"
+)
 @click.argument("input")
 @click.option("-n", "--name", required=False, default=None)
 @click.option("-ss", required=False, default=None)

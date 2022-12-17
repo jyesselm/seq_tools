@@ -3,10 +3,10 @@ commandline interface for seq_tools
 """
 import os
 import click
+import multiprocessing
 import pandas as pd
-import vienna
 
-from seq_tools import sequence
+from seq_tools import sequence, dataframe
 from seq_tools.logger import setup_applevel_logger, get_logger
 
 pd.set_option("display.max_colwidth", None)
@@ -58,6 +58,24 @@ def handle_output(df, output) -> None:
         df.to_csv(output, index=False)
 
 
+def run(df, func, processes) -> pd.Da:
+    """
+    runs a function on a dataframe
+    :param df: dataframe with sequences
+    :param func: function to run
+    :param processes: number of processes
+    :return: None
+    """
+    log = get_logger("run")
+    log.info(f"running {func.__name__} on {len(df)} sequences")
+    if processes == 1:
+        df["sequence"] = df["sequence"].apply(func)
+    else:
+        with multiprocessing.Pool(processes) as pool:
+            df["sequence"] = pool.map(func, df["sequence"])
+    log.info(f"finished {func.__name__}")
+
+
 @click.group()
 def cli():
     """
@@ -68,14 +86,13 @@ def cli():
 @click.command(help="fold rna sequences")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
-def fold(data, output):
+@click.option("-p", "--processes", help="number of processes", default=1)
+def fold(data, output, processes):
     """
     fold rna sequences
     """
     log = get_logger("fold")
     df = get_input_dataframe(data)
-    for i, row in df.iterrows():
-        pass
 
 
 @cli.command(help="convert rna sequence(s) to dna")

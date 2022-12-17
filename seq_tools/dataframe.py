@@ -29,9 +29,18 @@ def get_extinction_coeff(df, ntype, double_stranded):
     :param double_stranded: is double stranded?
     :return: None
     """
-    # df["extinction_coeff"] = df["sequence"].apply(
-    #    lambda x: extinction_coeff.get_extinction_coeff(x, type, ds)
-    # )
+    if ntype == "RNA" and "structure" in df.columns:
+        df["extinction_coefficient"] = df.apply(
+            lambda x: extinction_coeff.get_extinction_coeff(
+                x["sequence"], ntype, double_stranded, x["structure"]
+            )
+        )
+    else:
+        df["extinction_coeff"] = df["sequence"].apply(
+            lambda x: extinction_coeff.get_extinction_coeff(
+                x, ntype, double_stranded
+            )
+        )
     return df
 
 

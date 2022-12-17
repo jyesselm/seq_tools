@@ -10,17 +10,16 @@ import sys
 APP_LOGGER_NAME = "SEQ_TOOLS"
 
 
-def setup_applevel_logger(logger_name=APP_LOGGER_NAME, is_debug=False,
-                          file_name=None):
+def setup_applevel_logger(
+    logger_name=APP_LOGGER_NAME, is_debug=False, file_name=None
+):
     """
     Set up the logger for the app
     """
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG if is_debug else logging.INFO)
 
-    formatter = logging.Formatter(
-            "%(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
 
     # pylint: disable=C0103
     sh = logging.StreamHandler(sys.stdout)
@@ -37,7 +36,7 @@ def setup_applevel_logger(logger_name=APP_LOGGER_NAME, is_debug=False,
     return logger
 
 
-def get_logger(module_name=''):
+def get_logger(module_name=""):
     """
     Get the logger for the module
     """
