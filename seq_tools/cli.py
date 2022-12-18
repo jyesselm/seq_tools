@@ -3,7 +3,7 @@ commandline interface for seq_tools
 """
 import os
 import click
-import multiprocessing
+import tabulate
 import pandas as pd
 
 from seq_tools import sequence, dataframe
@@ -55,6 +55,17 @@ def handle_output(df, output) -> None:
         log.info(f"output->\n{df.iloc[0]}")
     else:
         log.info(f"output csv: {output}")
+        if len(df) > 100:
+            log.info(
+                "\n"
+                + tabulate.tabulate(
+                    df[0:100], headers="keys", tablefmt="simple"
+                )
+            )
+        else:
+            log.info(
+                "\n" + tabulate.tabulate(df, headers="keys", tablefmt="simple")
+            )
         df.to_csv(output, index=False)
 
 
@@ -65,7 +76,7 @@ def cli():
     """
 
 
-@click.command(help="fold rna sequences")
+@cli.command(help="fold rna sequences")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
 def fold(data, output):
@@ -82,6 +93,22 @@ def fold(data, output):
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
 def to_dna(data, output):
+    """
+    Convert RNA sequence to DNA
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    df = df[["name", "sequence"]]
+    df = dataframe.to_dna(df)
+    handle_output(df, output)
+
+
+@cli.command(
+    help="convert rna sequence(s) to dna template, includes T7 promoter"
+)
+@click.argument("data")
+@click.option("-o", "--output", help="output file", default="output.csv")
+def to_dna_template(data, output):
     """
     Convert RNA sequence to DNA
     """

@@ -148,7 +148,6 @@ def transcribe(df: pd.DataFrame) -> pd.DataFrame:
     if len(has_t7) != len(df):
         raise ValueError("not all sequences start with T7 promoter")
     df = trim(df, 20, 0)
-    print(df)
     df = to_rna(df)
     df = fold(df)
     return df

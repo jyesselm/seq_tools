@@ -1,6 +1,8 @@
 wheel>=0.22
-pandas
 black
-numpy
 click
+tabulate
+numpy
+pandas
+pytest
 vienna
