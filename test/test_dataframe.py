@@ -1,6 +1,7 @@
 """
 module to test dataframe.py
 """
+import os
 import pandas as pd
 from seq_tools.dataframe import (
     add,
@@ -9,9 +10,10 @@ from seq_tools.dataframe import (
     fold,
     to_dna,
     to_dna_template,
+    to_fasta,
     to_rna,
     trim,
-    transcribe
+    transcribe,
 )
 
 
@@ -122,6 +124,20 @@ def test_to_dna_template():
     df = get_test_data_rna()
     df = to_dna_template(df)
     assert df["sequence"][0] == "TTCTAATACGACTCACTATAGGGGTTTTCCCC"
+
+
+def test_to_fasta():
+    """
+    test to_fasta function
+    """
+    df = get_test_data_dna()
+    to_fasta(df, "test.fasta")
+    assert os.path.isfile("test.fasta")
+    with open("test.fasta", "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    assert lines[0] == ">seq_0\n"
+    assert lines[1] == "GGGGTTTTCCCC\n"
+    os.remove("test.fasta")
 
 
 def test_to_rna():

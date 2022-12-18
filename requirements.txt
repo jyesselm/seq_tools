@@ -1,6 +1,7 @@
 wheel>=0.22
 black
 click
+editdistance
 tabulate
 numpy
 pandas

@@ -75,6 +75,23 @@ def cli():
     main function for script
     """
 
+@cli.command(help="add a sequence to 5' and/or 3'")
+@click.argument("data")
+@click.option("-p5", "--p5-seq", default="")
+@click.option("-p3", "--p3-seq", default="")
+@click.option("-o", "--output", help="output file", default="output.csv")
+def add(data, p5_seq, p3_seq, output):
+    """
+    adds a sequence to a dataframe
+    :param data: can be a sequence or a file
+    :param p5_seq: sequence to add to 5'
+    :param p3_seq: sequence to add to 3'
+    :param output: output file
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    df = dataframe.add(df, p5_seq, p3_seq)
+    handle_output(df, output)
 
 @cli.command(help="fold rna sequences")
 @click.argument("data")
@@ -82,6 +99,7 @@ def cli():
 def fold(data, output):
     """
     fold rna sequences
+    :param data: can be a sequence or a file
     """
     setup_applevel_logger()
     df = get_input_dataframe(data)

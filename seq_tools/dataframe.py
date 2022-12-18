@@ -2,6 +2,8 @@
 module for working with dataframes that contain nucleotide sequences
 """
 import pandas as pd
+import numpy as np
+import editdistance
 import vienna
 
 from seq_tools import sequence, extinction_coeff
@@ -19,6 +21,27 @@ def add(df: pd.DataFrame, p5_seq: str, p3_seq: str) -> pd.DataFrame:
     if "structure" in df.columns:
         df = fold(df)
     return df
+
+
+def calc_edit_distance(df: pd.DataFrame) -> float:
+    """
+    calculates the edit distance between each sequence in the dataframe
+    :param df: dataframe
+    :return: the edit distance
+    """
+    scores = [100 for _ in range(len(df))]
+    sequences = list(df["sequence"])
+    for i, seq1 in enumerate(sequences):
+        for j, seq2 in enumerate(sequences):
+            if i >= j:
+                continue
+            diff = editdistance.eval(seq1, seq2)
+            if scores[i] > diff:
+                scores[i] = diff
+            if scores[j] > diff:
+                scores[j] = diff
+    avg = np.mean(scores)
+    return avg
 
 
 def get_extinction_coeff(
@@ -72,7 +95,6 @@ def fold(df: pd.DataFrame) -> pd.DataFrame:
     """
     folds each sequence in the dataframe
     :param df: dataframe
-    :return: None
     """
 
     def _fold(seq):
@@ -106,6 +128,33 @@ def to_dna_template(df: pd.DataFrame) -> pd.DataFrame:
     if "structure" in df.columns:
         df = df.drop(columns=["structure"])
     return df
+
+
+def to_fasta(df: pd.DataFrame, filename: str) -> None:
+    """
+    writes the sequences in the dataframe to a fasta file
+    :param df: dataframe
+    :param filename: fasta file path
+    :return: None
+    """
+    with open(filename, "w", encoding="utf-8") as f:
+        for i, row in df.iterrows():
+            f.write(f">{row['name']}\n")
+            f.write(f"{row['sequence']}\n")
+
+
+def to_opool(df: pd.DataFrame, name: str, filename: str) -> None:
+    """
+    writes the sequences in the dataframe to an opool file
+    :param df: dataframe
+    :param name: opool name
+    :param filename: opool file path
+    :return: None
+    """
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(f"opool {name}\n")
+        for i, row in df.iterrows():
+            f.write(f"{name}\t{row['sequence']}\n")
 
 
 def to_rna(df: pd.DataFrame) -> pd.DataFrame:

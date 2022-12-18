@@ -9,6 +9,19 @@ from seq_tools import cli
 resource_path = os.path.join(os.path.dirname(__file__), "resources")
 
 
+def test_add():
+    """
+    Test the add function
+    """
+    runner = CliRunner()
+    result = runner.invoke(
+        cli.add, ["GGGGTTTTCCCC", "-p5", "AAAA", "-p3", "CCCC"]
+    )
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert lines[-2] == "sequence    AAAAGGGGTTTTCCCCCCCC"
+
+
 def test_to_dna_single():
     """
     Test the to_dna function
