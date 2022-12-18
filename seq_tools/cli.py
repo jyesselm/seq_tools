@@ -58,24 +58,6 @@ def handle_output(df, output) -> None:
         df.to_csv(output, index=False)
 
 
-def run(df, func, processes) -> pd.Da:
-    """
-    runs a function on a dataframe
-    :param df: dataframe with sequences
-    :param func: function to run
-    :param processes: number of processes
-    :return: None
-    """
-    log = get_logger("run")
-    log.info(f"running {func.__name__} on {len(df)} sequences")
-    if processes == 1:
-        df["sequence"] = df["sequence"].apply(func)
-    else:
-        with multiprocessing.Pool(processes) as pool:
-            df["sequence"] = pool.map(func, df["sequence"])
-    log.info(f"finished {func.__name__}")
-
-
 @click.group()
 def cli():
     """
@@ -86,13 +68,14 @@ def cli():
 @click.command(help="fold rna sequences")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
-@click.option("-p", "--processes", help="number of processes", default=1)
-def fold(data, output, processes):
+def fold(data, output):
     """
     fold rna sequences
     """
-    log = get_logger("fold")
+    setup_applevel_logger()
     df = get_input_dataframe(data)
+    df = dataframe.fold(df)
+    handle_output(df, output)
 
 
 @cli.command(help="convert rna sequence(s) to dna")
@@ -105,8 +88,7 @@ def to_dna(data, output):
     setup_applevel_logger()
     df = get_input_dataframe(data)
     df = df[["name", "sequence"]]
-    # apply sequence.to_dna to `sequence` column
-    df["sequence"] = df["sequence"].apply(sequence.to_dna)
+    df = dataframe.to_dna(df)
     handle_output(df, output)
 
 
