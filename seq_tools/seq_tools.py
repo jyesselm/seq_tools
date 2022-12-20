@@ -134,9 +134,7 @@ def run_main(p):
                     pass
 
 
-@click.command(
-    "a simple command for manipulating rna and dna sequences in dataframes"
-)
+@click.command("a simple command for manipulating rna and dna sequences in dataframes")
 @click.argument("input")
 @click.option("-n", "--name", required=False, default=None)
 @click.option("-ss", required=False, default=None)

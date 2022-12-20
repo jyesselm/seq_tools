@@ -14,9 +14,7 @@ def test_add():
     Test the add function
     """
     runner = CliRunner()
-    result = runner.invoke(
-        cli.add, ["GGGGTTTTCCCC", "-p5", "AAAA", "-p3", "CCCC"]
-    )
+    result = runner.invoke(cli.add, ["GGGGTTTTCCCC", "-p5", "AAAA", "-p3", "CCCC"])
     assert result.exit_code == 0
     lines = result.output.splitlines()
     assert lines[-2] == "sequence    AAAAGGGGTTTTCCCCCCCC"
@@ -31,8 +29,7 @@ def test_edit_distance():
     assert result.exit_code == 0
     lines = result.output.splitlines()
     assert (
-        lines[0]
-        == "SEQ_TOOLS.edit_distance - INFO - edit distance: 17.666666666666668"
+        lines[0] == "SEQ_TOOLS.edit_distance - INFO - edit distance: 17.666666666666668"
     )
 
 
@@ -45,9 +42,7 @@ def test_extinction_coeff():
     assert result.exit_code == 0
     lines = result.output.splitlines()
     assert lines[-2] == "extinction_coeff          103700"
-    result = runner.invoke(
-        cli.ec, [f"{resource_path}/test.csv", "-nt", "RNA", "-ds"]
-    )
+    result = runner.invoke(cli.ec, [f"{resource_path}/test.csv", "-nt", "RNA", "-ds"])
     assert result.exit_code == 0
 
 
@@ -76,9 +71,7 @@ def test_to_dna_file():
     Test the to_dna function
     """
     runner = CliRunner()
-    result = runner.invoke(
-        cli.to_dna, [os.path.join(resource_path, "test.csv")]
-    )
+    result = runner.invoke(cli.to_dna, [os.path.join(resource_path, "test.csv")])
     assert result.exit_code == 0
     assert os.path.isfile("output.csv")
     df = pd.read_csv("output.csv")
