@@ -79,17 +79,22 @@ def handle_output(df, output) -> None:
         log.info(f"output csv: {output}")
         if len(df) > 100:
             log.info(
-                "\n" + tabulate.tabulate(df[0:100], headers="keys", tablefmt="simple")
+                "\n"
+                + tabulate.tabulate(
+                    df[0:100], headers="keys", tablefmt="simple"
+                )
             )
         else:
-            log.info("\n" + tabulate.tabulate(df, headers="keys", tablefmt="simple"))
+            log.info(
+                "\n" + tabulate.tabulate(df, headers="keys", tablefmt="simple")
+            )
         df.to_csv(output, index=False)
 
 
 @click.group()
 def cli():
     """
-    a script to manipulate sequences in dataframes
+      a set scripts to manipulate sequences in csv files
     """
 
 
@@ -152,7 +157,9 @@ def ec(data, ntype, double_stranded, output):
     df = dataframe.get_extinction_coeff(df, ntype, double_stranded)
     handle_output(df, output)
     if len(df) != 1:
-        log.info("avg extinction coefficient: " + str(df["extinction_coeff"].mean()))
+        log.info(
+            "avg extinction coefficient: " + str(df["extinction_coeff"].mean())
+        )
 
 
 @cli.command(help="calculate the molecular weight for each sequence")
@@ -235,7 +242,9 @@ def to_dna(data, output):
     handle_output(df, output)
 
 
-@cli.command(help="convert rna sequence(s) to dna template, includes T7 promoter")
+@cli.command(
+    help="convert rna sequence(s) to dna template, includes T7 promoter"
+)
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
 def to_dna_template(data, output):
@@ -310,7 +319,6 @@ def trim(data, p5_cut, p3_cut, output):
     df = get_input_dataframe(data)
     df = dataframe.trim(df, p5_cut, p3_cut)
     handle_output(df, output)
-
 
 @cli.command(help="convert dna sequence(s) to rna")
 @click.argument("data")

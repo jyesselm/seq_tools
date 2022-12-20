@@ -93,7 +93,9 @@ def get_extinction_coeff(
         df["extinction_coeff"] = df.apply(compute_w_struct, axis=1)
     else:
         df["extinction_coeff"] = df["sequence"].apply(
-            lambda x: extinction_coeff.get_extinction_coeff(x, ntype, double_stranded)
+            lambda x: extinction_coeff.get_extinction_coeff(
+                x, ntype, double_stranded
+            )
         )
     return df
 
