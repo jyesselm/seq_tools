@@ -29,6 +29,8 @@ def calc_edit_distance(df: pd.DataFrame) -> float:
     :param df: dataframe
     :return: the edit distance
     """
+    if len(df) == 1:
+        return 0
     scores = [100 for _ in range(len(df))]
     sequences = list(df["sequence"])
     for i, seq1 in enumerate(sequences):
@@ -42,6 +44,28 @@ def calc_edit_distance(df: pd.DataFrame) -> float:
                 scores[j] = diff
     avg = np.mean(scores)
     return avg
+
+
+def determine_ntype(df: pd.DataFrame) -> str:
+    """
+    determines the nucleotide type of the sequences in the dataframe
+    :param df: dataframe
+    :return: nucleotide type, RNA or DNA
+    """
+    results = []
+    for _, row in df.iterrows():
+        ntype = "UNCERTAIN"
+        if row["sequence"].count("T") > 0:
+            ntype = "DNA"
+        elif row["sequence"].count("U") > 0:
+            ntype = "RNA"
+        results.append(ntype)
+    if df["sequence"].str.len().mean() > 10:
+        if results.count("DNA") > 0 and results.count("RNA") > 0:
+            raise ValueError("Cannot determine nucleotide type")
+    if results.count("RNA") > 0:
+        return "RNA"
+    return "DNA"
 
 
 def get_extinction_coeff(
@@ -87,6 +111,19 @@ def get_molecular_weight(
     """
     df["mw"] = df["sequence"].apply(
         lambda x: sequence.get_molecular_weight(x, ntype, double_stranded)
+    )
+    return df
+
+
+def get_reverse_complement(df: pd.DataFrame, ntype: str) -> pd.DataFrame:
+    """
+    reverse complements each sequence in the dataframe
+    :param df: dataframe
+    :param ntype: nucleotide type, RNA or DNA
+    :return: stores reverse complement in dataframe rev_comp column
+    """
+    df["rev_comp"] = df["sequence"].apply(
+        lambda x: sequence.get_reverse_complement(x, ntype)
     )
     return df
 
@@ -138,7 +175,7 @@ def to_fasta(df: pd.DataFrame, filename: str) -> None:
     :return: None
     """
     with open(filename, "w", encoding="utf-8") as f:
-        for i, row in df.iterrows():
+        for _, row in df.iterrows():
             f.write(f">{row['name']}\n")
             f.write(f"{row['sequence']}\n")
 
@@ -151,10 +188,9 @@ def to_opool(df: pd.DataFrame, name: str, filename: str) -> None:
     :param filename: opool file path
     :return: None
     """
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(f"opool {name}\n")
-        for i, row in df.iterrows():
-            f.write(f"{name}\t{row['sequence']}\n")
+    df["name"] = name
+    df = df[["name", "sequence"]]
+    df.to_xlsx(filename, index=False)
 
 
 def to_rna(df: pd.DataFrame) -> pd.DataFrame:

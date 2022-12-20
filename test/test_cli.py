@@ -22,6 +22,46 @@ def test_add():
     assert lines[-2] == "sequence    AAAAGGGGTTTTCCCCCCCC"
 
 
+def test_edit_distance():
+    """
+    Test the edit distance function
+    """
+    runner = CliRunner()
+    result = runner.invoke(cli.edit_distance, f"{resource_path}/test.csv")
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert (
+        lines[0]
+        == "SEQ_TOOLS.edit_distance - INFO - edit distance: 17.666666666666668"
+    )
+
+
+def test_extinction_coeff():
+    """
+    Test the extinction_coeff function
+    """
+    runner = CliRunner()
+    result = runner.invoke(cli.ec, ["GGGGTTTTCCCC"])
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert lines[-2] == "extinction_coeff          103700"
+    result = runner.invoke(
+        cli.ec, [f"{resource_path}/test.csv", "-nt", "RNA", "-ds"]
+    )
+    assert result.exit_code == 0
+
+
+def test_molecular_weight():
+    """
+    Test the molecular_weight function
+    """
+    runner = CliRunner()
+    result = runner.invoke(cli.mw, ["GGGGTTTTCCCC"])
+    assert result.exit_code == 0
+    lines = result.output.splitlines()
+    assert lines[-2] == "mw                3906.4"
+
+
 def test_to_dna_single():
     """
     Test the to_dna function

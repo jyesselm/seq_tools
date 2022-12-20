@@ -2,11 +2,15 @@
 module to test dataframe.py
 """
 import os
+import pytest
 import pandas as pd
 from seq_tools.dataframe import (
     add,
+    calc_edit_distance,
+    determine_ntype,
     get_extinction_coeff,
     get_molecular_weight,
+    get_reverse_complement,
     fold,
     to_dna,
     to_dna_template,
@@ -58,6 +62,34 @@ def test_add():
     assert df["sequence"][0] == "AAAAGGGGTTTTCCCCCCCC"
 
 
+def test_calc_edit_distance():
+    """
+    test calc_edit_distance function
+    """
+    # should return zero for only 1 sequence
+    df = get_test_data_dna()
+    val = calc_edit_distance(df)
+    assert val == 0
+    # should return 1 for 2 sequences
+    df = get_test_data_dna()
+    df.loc[1] = ["seq_1", "GGGGTATTCCCC"]
+    val = calc_edit_distance(df)
+    assert val == 1
+
+
+def test_determine_ntype():
+    """
+    test determine_ntype function
+    """
+    df = get_test_data_dna()
+    assert determine_ntype(df) == "DNA"
+    df = get_test_data_rna()
+    assert determine_ntype(df) == "RNA"
+    df = pd.concat([get_test_data_dna(), get_test_data_rna()])
+    with pytest.raises(ValueError):
+        determine_ntype(df)
+
+
 def test_get_extinction_coeff_dna():
     """
     test get_extinction_coeff function
@@ -96,6 +128,15 @@ def test_get_molecular_weight_rna():
     df = pd.DataFrame([["seq_0", "AUG"]], columns=["name", "sequence"])
     df = get_molecular_weight(df, "RNA", False)
     assert df["mw"][0] == 1034.6
+
+
+def test_reverse_complement():
+    """
+    test reverse_complement function
+    """
+    df = get_test_data_dna()
+    df = get_reverse_complement(df, "DNA")
+    assert df["sequence"][0] == "GGGGTTTTCCCC"
 
 
 def test_fold():

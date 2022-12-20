@@ -34,13 +34,35 @@ def get_input_dataframe(data) -> pd.DataFrame:
     if os.path.isfile(data):
         log.info(f"reading file {data}")
         df = pd.read_csv(data)
-        log.info(f"csv file contains {len(df)}")
+        log.info(f"csv file contains {len(df)} sequences")
     else:
         log.info(f"reading sequence {data}")
         data_df = [["seq", data]]
         df = pd.DataFrame(data_df, columns=["name", "sequence"])
     validate_dataframe(df)
     return df
+
+
+def get_ntype(df, ntype) -> str:
+    """
+    handles the ntype parameter
+    :param df: dataframe with sequences
+    :param ntype: nucleotide type
+    :return: str
+    """
+    log = get_logger("handle_ntype")
+    df_ntype = dataframe.determine_ntype(df)
+    log.info(f"determining nucleic acid type: {df_ntype}")
+    # enforce ntype
+    if ntype == "DNA":
+        log.info("forcing sequences to be DNA")
+        dataframe.to_dna(df)
+        return ntype
+    if ntype == "RNA":
+        log.info("forcing sequences to be RNA")
+        dataframe.to_rna(df)
+        return ntype
+    return df_ntype
 
 
 def handle_output(df, output) -> None:
@@ -72,8 +94,9 @@ def handle_output(df, output) -> None:
 @click.group()
 def cli():
     """
-    main function for script
+    a script to manipulate sequences in dataframes
     """
+
 
 @cli.command(help="add a sequence to 5' and/or 3'")
 @click.argument("data")
@@ -92,6 +115,104 @@ def add(data, p5_seq, p3_seq, output):
     df = get_input_dataframe(data)
     df = dataframe.add(df, p5_seq, p3_seq)
     handle_output(df, output)
+
+
+@cli.command(help="calculate the edit distance of a library")
+@click.argument("data", type=click.Path(exists=True))
+def edit_distance(data):
+    """
+    calculates the edit distance of a library
+    :param data: can be a sequence or a file
+    """
+    setup_applevel_logger()
+    df = pd.read_csv(data)
+    score = dataframe.calc_edit_distance(df)
+    log = get_logger("edit_distance")
+    log.info(f"edit distance: {score}")
+
+
+@cli.command(help="calculate the extinction coefficient for each sequence")
+@click.argument("data")
+@click.option(
+    "-nt",
+    "--ntype",
+    default=None,
+    type=click.Choice([None, "RNA", "DNA"]),
+    help="type of nucleic acid",
+)
+@click.option("-ds", "--double-stranded", is_flag=True)
+@click.option("-o", "--output", help="output file", default="output.csv")
+def ec(data, ntype, double_stranded, output):
+    """
+    calculates the extinction coefficient for each sequence
+    :param data: can be a sequence or a file
+    :param ntype: type of nucleic acid
+    :param double_stranded: if the sequence is double stranded
+    :param output: output file
+    """
+    setup_applevel_logger()
+    log = get_logger("extinction_coeff")
+    df = get_input_dataframe(data)
+    ntype = get_ntype(df, ntype)
+    df = dataframe.get_extinction_coeff(df, ntype, double_stranded)
+    handle_output(df, output)
+    if len(df) != 1:
+        log.info(
+            "avg extinction coefficient: " + str(df["extinction_coeff"].mean())
+        )
+
+
+@cli.command(help="calculate the molecular weight for each sequence")
+@click.argument("data")
+@click.option(
+    "-nt",
+    "--ntype",
+    default=None,
+    type=click.Choice([None, "RNA", "DNA"]),
+    help="type of nucleic acid",
+)
+@click.option("-ds", "--double-stranded", is_flag=True)
+@click.option("-o", "--output", help="output file", default="output.csv")
+def mw(data, ntype, double_stranded, output):
+    """
+    calculates the molecular weight for each sequence
+    :param data:
+    :param double_stranded:
+    :param output:
+    :return:
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    ntype = get_ntype(df, ntype)
+    df = dataframe.get_molecular_weight(df, ntype, double_stranded)
+    handle_output(df, output)
+    log = get_logger("molecular_weight")
+    if len(df) != 1:
+        log.info("avg molecular weight: " + str(df["molecular_weight"].mean()))
+
+
+@cli.command(help="calculate reverse complement for each sequence")
+@click.argument("data")
+@click.option(
+    "-nt",
+    "--ntype",
+    default=None,
+    type=click.Choice([None, "RNA", "DNA"]),
+    help="type of nucleic acid",
+)
+@click.option("-o", "--output", help="output file", default="output.csv")
+def rc(data, ntype, output):
+    """
+    calculates the reverse complement for each sequence
+    :param data: can be a sequence or a file
+    :param output: output file
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    ntype = get_ntype(df, ntype)
+    df = dataframe.get_reverse_complement(df, ntype)
+    handle_output(df, output)
+
 
 @cli.command(help="fold rna sequences")
 @click.argument("data")
@@ -137,6 +258,35 @@ def to_dna_template(data, output):
     handle_output(df, output)
 
 
+@cli.command(help="generate fasta file from csv")
+@click.argument("data")
+@click.option("-o", "--output", help="output file", default="test.fasta")
+def to_fasta(data, output):
+    """
+    generate fasta file from csv
+    :param data: can be a sequence or a file
+    :param output: output file
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    dataframe.to_fasta(df, output)
+
+
+@cli.command(help="generate oligo pool file from csv")
+@click.argument("data")
+@click.option("-n", "--name", help="name of the opool file", default="opool")
+@click.option("-o", "--output", help="output file", default="opool.xlsx")
+def to_opool(data, name, output):
+    """
+    generate opool file from csv
+    :param data: can be a sequence or a file
+    :param output: output file
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    dataframe.to_opool(df, name, output)
+
+
 @cli.command(help="convert rna sequence(s) to dna")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
@@ -149,6 +299,38 @@ def to_rna(data, output):
     df = df[["name", "sequence"]]
     # apply sequence.to_dna to `sequence` column
     df["sequence"] = df["sequence"].apply(sequence.to_rna)
+    handle_output(df, output)
+
+
+@cli.command(help="trim 5'/3' ends of sequences")
+@click.argument("data")
+@click.option("-p5", "--p5-cut", default=0)
+@click.option("-p3", "--p3-cut", default=0)
+@click.option("-o", "--output", help="output file", default="output.csv")
+def trim(data, p5_cut, p3_cut, output):
+    """
+    trim 5'/3' ends of sequences
+    :param data: can be a sequence or a file
+    :param p5_cut: trim off 5' end
+    :param p3_cut: trim off 3' end
+    :param output: output file
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    df = dataframe.trim(df, p5_cut, p3_cut)
+    handle_output(df, output)
+
+@cli.command(help="convert dna sequence(s) to rna")
+@click.argument("data")
+@click.option("-o", "--output", help="output file", default="output.csv")
+def transcribe(data, output):
+    """
+    Convert DNA sequence to RN
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    df = df[["name", "sequence"]]
+    df = dataframe.transcribe(df)
     handle_output(df, output)
 
 
