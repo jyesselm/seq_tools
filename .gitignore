@@ -5,6 +5,7 @@
 
 # pycharm
 .idea
+.pytest_cache
 
 # Packages
 *.egg

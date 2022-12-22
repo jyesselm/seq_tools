@@ -8,10 +8,13 @@ from seq_tools.dataframe import (
     add,
     calc_edit_distance,
     determine_ntype,
+    fold,
+    has_t7_promoter,
+    has_5p_sequence,
+    has_3p_sequence,
     get_extinction_coeff,
     get_molecular_weight,
     get_reverse_complement,
-    fold,
     to_dna,
     to_dna_template,
     to_fasta,
@@ -90,6 +93,53 @@ def test_determine_ntype():
         determine_ntype(df)
 
 
+def test_fold():
+    """
+    test fold function
+    """
+    df = get_test_data_rna()
+    df = df[["name", "sequence"]]
+    df = fold(df)
+    assert df["structure"][0] == "((((....))))"
+
+
+def test_has_t7_promoter():
+    """
+    test has_t7_promoter function
+    :return:
+    """
+    df = get_test_data_dna()
+    has_t7 = has_t7_promoter(df)
+    assert not has_t7
+    df.iloc[0]["sequence"] = "TTCTAATACGACTCACTATA" + "GAAAATTTTGGGGCCCC"
+    has_t7 = has_t7_promoter(df)
+    assert has_t7
+
+
+def test_has_5p_sequence():
+    """
+    test has_5p_sequence function
+    """
+    df = get_test_data_dna()
+    df.loc[1] = ["seq_1", "GGGTTTTCCCC"]
+    has_5p = has_5p_sequence(df, "GGG")
+    assert has_5p
+    has_5p = has_5p_sequence(df, "GGGG")
+    assert not has_5p
+
+
+def test_has_3p_sequence():
+    """
+    test has_3p_sequence function
+    """
+    df = get_test_data_dna()
+    df.loc[1] = ["seq_1", "GGGTTTTCCCC"]
+    has_3p = has_3p_sequence(df, "CCCC")
+    assert has_3p
+    has_3p = has_3p_sequence(df, "GGGG")
+    assert not has_3p
+
+
 def test_get_extinction_coeff_dna():
     """
     test get_extinction_coeff function
@@ -137,16 +187,6 @@ def test_reverse_complement():
     df = get_test_data_dna()
     df = get_reverse_complement(df, "DNA")
     assert df["sequence"][0] == "GGGGTTTTCCCC"
-
-
-def test_fold():
-    """
-    test fold function
-    """
-    df = get_test_data_rna()
-    df = df[["name", "sequence"]]
-    df = fold(df)
-    assert df["structure"][0] == "((((....))))"
 
 
 def test_to_dna():

@@ -1,7 +1,7 @@
 """
 setup script for seq_tools
 """
-#!/usr/bin/env python
+# !/usr/bin/env python
 
 import os
 import sys
@@ -15,22 +15,18 @@ if sys.argv[-1] == "publish":
     os.system("python setup.py sdist upload")
     sys.exit()
 
-readme = open("README.md").read()
-doclink = """
-Documentation
--------------
+with open("README.md", "r", encoding="utf-8") as f:
+    readme = f.read()
 
-The full documentation is at http://seq_tools.rtfd.org."""
-history = ""
-
-with open("requirements.txt") as f:
+with open("requirements.txt", "r", encoding="utf-8") as f:
     requirements = f.read().splitlines()
 
 setup(
     name="rna_seq_tools",
-    version="0.2.0",
-    description="simple functions for manipulating sequences and secondary structures in pandas dataframe format",
-    long_description=readme + "\n\n" + doclink + "\n\n" + history,
+    version="0.4.0",
+    description="simple functions for manipulating sequences and secondary "
+    "structures in pandas dataframe format",
+    long_description=readme,
     author="Joe Yesselman",
     author_email="jyesselm@unl.edu",
     url="https://github.com/jyesselm/seq_tools",
@@ -39,12 +35,11 @@ setup(
     ],
     package_dir={"seq_tools": "seq_tools"},
     py_modules=[
-        "seq_tools/data_frame",
+        "seq_tools/dataframe",
         "seq_tools/dot_bracket",
         "seq_tools/cli",
         "seq_tools/extinction_coeff",
         "seq_tools/logger",
-        "seq_tools/seq_tools",
         "seq_tools/sequence",
     ],
     include_package_data=True,

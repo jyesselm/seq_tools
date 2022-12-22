@@ -94,7 +94,7 @@ def handle_output(df, output) -> None:
 @click.group()
 def cli():
     """
-      a set scripts to manipulate sequences in csv files
+    a set scripts to manipulate sequences in csv files
     """
 
 
@@ -228,6 +228,62 @@ def fold(data, output):
     handle_output(df, output)
 
 
+@cli.command(help="checks to see if p5 is present in all sequences")
+@click.argument("data")
+@click.option("-p5", "--p5-seq", help="p5 sequence", required=True)
+@click.option(
+    "-nt",
+    "--ntype",
+    default=None,
+    type=click.Choice([None, "RNA", "DNA"]),
+    help="type of nucleic acid",
+)
+def has_p5(data, p5_seq, ntype):
+    """
+    checks if a sequence has a p5 sequence
+    :param data: can be a sequence or a file
+    :param p5_seq: p5 sequence
+    :param ntype: type of nucleic acid
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    get_ntype(df, ntype)
+    has_p5_seq = dataframe.has_5p_sequence(df, p5_seq)
+    log = get_logger("has_p5")
+    if has_p5_seq:
+        log.info("p5 sequence is present in all sequences")
+    else:
+        log.info("p5 sequence is not present in all sequences")
+
+
+@cli.command(help="checks to see if p3 is present in all sequences")
+@click.argument("data")
+@click.option("-p3", "--p3-seq", help="p3 sequence", required=True)
+@click.option(
+    "-nt",
+    "--ntype",
+    default=None,
+    type=click.Choice([None, "RNA", "DNA"]),
+    help="type of nucleic acid",
+)
+def has_p3(data, p3_seq, ntype):
+    """
+    checks if a sequence has a p3 sequence
+    :param data: can be a sequence or a file
+    :param p3_seq: p3 sequence
+    :param ntype: type of nucleic acid
+    """
+    setup_applevel_logger()
+    df = get_input_dataframe(data)
+    get_ntype(df, ntype)
+    has_p3_seq = dataframe.has_5p_sequence(df, p3_seq)
+    log = get_logger("has_p3")
+    if has_p3_seq:
+        log.info("p3 sequence is present in all sequences")
+    else:
+        log.info("p3 sequence is not present in all sequences")
+
+
 @cli.command(help="convert rna sequence(s) to dna")
 @click.argument("data")
 @click.option("-o", "--output", help="output file", default="output.csv")
@@ -319,6 +375,7 @@ def trim(data, p5_cut, p3_cut, output):
     df = get_input_dataframe(data)
     df = dataframe.trim(df, p5_cut, p3_cut)
     handle_output(df, output)
+
 
 @cli.command(help="convert dna sequence(s) to rna")
 @click.argument("data")
