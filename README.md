@@ -45,7 +45,7 @@ Commands:
 ```
 
 ### add
-
+Adds a sequence to the 5' and/or 3' end of a sequence. 
 ```shell
 $ seq_tools add -p5 "AAAA" "GGGGUUUUCCCC"
 SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
@@ -55,8 +55,54 @@ sequence    AAAAGGGGUUUUCCCC
 Name: 0, dtype: object
 ```
 
+### ec 
+Calculate the extinction coefficient for each sequence. 
+```shell
+$ seq-tools ec "GGGGUUUUCCCC"
+SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
+SEQ_TOOLS.handle_ntype - INFO - determining nucleic acid type: RNA
+SEQ_TOOLS.handle_output - INFO - output->
+name                         seq
+sequence            GGGGUUUUCCCC
+extinction_coeff          109500
+Name: 0, dtype: object
+```
+
+### edit-distance
+Calculate the edit distance of a library. On average how different each sequence 
+is from the rest of the library. 
+```shell
+seq-tools edit-distance test/resources/test.csv
+SEQ_TOOLS.edit_distance - INFO - edit distance: 17.666666666666668
+```
+
+### fold
+Fold rna sequences. 
+```shell
+$ seq-tools fold "GGGGUUUUCCCC"
+SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
+SEQ_TOOLS.handle_output - INFO - output->
+name                   seq
+sequence      GGGGUUUUCCCC
+structure     ((((....))))
+mfe                   -5.9
+ens_defect            0.38
+Name: 0, dtype: object
+```
+
+### to-dna
+Convert all sequences to DNA i.e. replace T with U. 
 ```shell
 $ seq_tools to-dna "GGGGUUUUCCCC"
 SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
 SEQ_TOOLS.to_dna - INFO - converted sequence: GGGGTTTTCCCC
+```
+
+### other non commandline
+
+#### structure representation
+
+```python
+from seq_tools import SequenceStructure
+struct = SequenceStructure("GGGGUUUUCCCC", "((((....))))")
 ```

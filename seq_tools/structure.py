@@ -26,6 +26,14 @@ class SequenceStructure:
                 f" {self.sequence} {self.structure}"
             )
 
+    def __add__(self, other):
+        """
+        add two StructParams objects
+        """
+        return SequenceStructure(
+            self.sequence + other.sequence, self.structure + other.structure
+        )
+
     def __len__(self):
         """
         return the length of the sequence
