@@ -1,10 +1,19 @@
+"""
+simple parsing of dot bracket notation
+"""
+
 import collections as col
 
-bracket_left = "([{<ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-bracket_right = ")]}>abcdefghijklmnopqrstuvwxyz"
+BRACKET_LEFT = "([{<ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+BRACKET_RIGHT = ")]}>abcdefghijklmnopqrstuvwxyz"
 
 
 def inverse_brackets(bracket):
+    """
+    Returns a dictionary that maps each character in bracket to its index.
+    :param bracket:
+    :return:
+    """
     res = col.defaultdict(int)
     for i, a in enumerate(bracket):
         res[a] = i
@@ -22,8 +31,8 @@ def dotbracket_to_pairtable(struct):
     # pt[0] = len(struct) - struct.count("&")
 
     stack = col.defaultdict(list)
-    inverse_bracket_left = inverse_brackets(bracket_left)
-    inverse_bracket_right = inverse_brackets(bracket_right)
+    inverse_bracket_left = inverse_brackets(BRACKET_LEFT)
+    inverse_bracket_right = inverse_brackets(BRACKET_RIGHT)
 
     i = 0
     for a in struct:
@@ -48,7 +57,3 @@ def dotbracket_to_pairtable(struct):
         raise ValueError("Too many opening brackets!")
 
     return pt
-
-
-def get_num_of_basepairs(seq, struct):
-    pass

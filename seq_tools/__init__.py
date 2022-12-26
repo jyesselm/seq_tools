@@ -15,7 +15,9 @@ from .dataframe import (
     has_t7_promoter,
     has_5p_sequence,
     has_3p_sequence,
+    get_default_names,
     get_extinction_coeff,
+    get_length,
     get_molecular_weight,
     get_reverse_complement,
     to_dna,
@@ -25,3 +27,4 @@ from .dataframe import (
     trim,
     transcribe,
 )
+from .structure import SequenceStructure

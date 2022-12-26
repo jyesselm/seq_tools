@@ -54,7 +54,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "seq_tools = seq_tools.cli:cli",
+            "seq-tools = seq_tools.cli:cli",
         ]
     },
 )
