@@ -125,11 +125,11 @@ def find(
             )
         )
         matches_seq = [
-            str(m.start()) + "-" + str(m.end() + len(m.group(1)))
+            str(m.start() + start) + "-" + str(m.end() + len(m.group(1)) + start)
             for m in pattern_seq.finditer(struct.sequence)
         ]
         matches_ss = [
-            str(m.start()) + "-" + str(m.end() + len(m.group(1)))
+            str(m.start() + start) + "-" + str(m.end() + len(m.group(1)) + start)
             for m in pattern_ss.finditer(struct.structure)
         ]
         matches = list(set(matches_seq).intersection(set(matches_ss)))
