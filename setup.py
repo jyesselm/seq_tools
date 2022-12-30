@@ -27,6 +27,7 @@ setup(
     description="simple functions for manipulating sequences and secondary "
     "structures in pandas dataframe format",
     long_description=readme,
+    long_description_content_type="text/markdown",
     author="Joe Yesselman",
     author_email="jyesselm@unl.edu",
     url="https://github.com/jyesselm/seq_tools",
