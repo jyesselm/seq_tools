@@ -310,7 +310,7 @@ def to_dna_template(data, output):
     setup_applevel_logger()
     df = get_input_dataframe(data)
     df = df[["name", "sequence"]]
-    df = dataframe.to_dna(df)
+    df = dataframe.to_dna_template(df)
     handle_output(df, output)
 
 
