@@ -237,7 +237,8 @@ def test_trim():
     df = get_test_data_dna()
     df = trim(df, 1, 2)
     assert df["sequence"][0] == "GGGTTTTCC"
-    # okay with this behavior basically removes the entire string if the trim is too large
+    # okay with this behavior basically removes the entire string if the trim is
+    # too large
     df = get_test_data_dna()
     df = trim(df, 100, 100)
     assert df["sequence"][0] == ""

@@ -85,13 +85,30 @@ class SequenceStructure:
             self.structure + "&" + other.structure,
         )
 
-    def __add__(self, other):
+    def replace(self, other, pos):
         """
-        add two StructParams objects
+        Replaces the sequence and structure of this object with the sequence and
+        structure in the supplied SequenceStructure object at the specified position.
+
+        :param other: The SequenceStructure object containing the new sequence and
+        structure.
+        :type other: SequenceStructure
+        :param pos: The position at which to replace the sequence and structure.
+        :type pos: int
         """
-        return SequenceStructure(
-            self.sequence + other.sequence, self.structure + other.structure
+        if pos < 0 or pos > len(self.sequence):
+            raise ValueError(f"Invalid position: {pos}")
+        sequence = (
+            self.sequence[:pos]
+            + other.sequence
+            + self.sequence[pos + len(other.sequence) :]
         )
+        structure = (
+            self.structure[:pos]
+            + other.structure
+            + self.structure[pos + len(other.structure) :]
+        )
+        return SequenceStructure(sequence, structure)
 
 
 def find(
@@ -125,11 +142,15 @@ def find(
             )
         )
         matches_seq = [
-            str(m.start() + start) + "-" + str(m.end() + len(m.group(1)) + start)
+            str(m.start() + start)
+            + "-"
+            + str(m.end() + len(m.group(1)) + start)
             for m in pattern_seq.finditer(struct.sequence)
         ]
         matches_ss = [
-            str(m.start() + start) + "-" + str(m.end() + len(m.group(1)) + start)
+            str(m.start() + start)
+            + "-"
+            + str(m.end() + len(m.group(1)) + start)
             for m in pattern_ss.finditer(struct.structure)
         ]
         matches = list(set(matches_seq).intersection(set(matches_ss)))

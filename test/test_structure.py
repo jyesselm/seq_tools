@@ -38,6 +38,17 @@ def test_join():
     assert ss.structure == "....&...."
 
 
+def test_replace():
+    """
+    test that replace returns a SequenceStructure object
+    """
+    ss1 = SequenceStructure("ATCG", "....")
+    ss2 = SequenceStructure("AA", "()")
+    ss = ss1.replace(ss2, 2)
+    assert ss.sequence == "ATAA"
+    assert ss.structure == "..()"
+
+
 def test_find():
     """
     test that find returns the correct index
