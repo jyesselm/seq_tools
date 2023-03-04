@@ -17,6 +17,7 @@ def add(df: pd.DataFrame, p5_seq: str, p3_seq: str) -> pd.DataFrame:
     :param p3_seq: 3' sequence
     :return: None
     """
+    df = df.copy()
     df["sequence"] = df["sequence"].apply(lambda x: p5_seq + x + p3_seq)
     if "structure" in df.columns:
         df = fold(df)
@@ -81,6 +82,7 @@ def fold(df: pd.DataFrame) -> pd.DataFrame:
             index=["structure", "mfe", "ens_defect"],
         )
 
+    df = df.copy()
     df[["structure", "mfe", "ens_defect"]] = df["sequence"].apply(_fold)
     return df
 
@@ -106,6 +108,7 @@ def get_extinction_coeff(
             row["sequence"], ntype, double_stranded, row["structure"]
         )
 
+    df = df.copy()
     if ntype == "RNA" and "structure" in df.columns:
         df["extinction_coeff"] = df.apply(compute_w_struct, axis=1)
     else:
@@ -123,6 +126,7 @@ def get_length(df: pd.DataFrame) -> pd.DataFrame:
     :param df: dataframe
     :return: None
     """
+    df = df.copy()
     df["length"] = df["sequence"].apply(len)
     return df
 
@@ -136,6 +140,7 @@ def get_molecular_weight(
     :param double_stranded: is double stranded?
     :return: None
     """
+    df = df.copy()
     df["mw"] = df["sequence"].apply(
         lambda x: sequence.get_molecular_weight(x, ntype, double_stranded)
     )
@@ -151,6 +156,7 @@ def get_default_names(df: pd.DataFrame) -> pd.DataFrame:
     if "name" in df.columns:
         raise ValueError("Dataframe already has names")
     # add `name` column to dataframe in the form of `seq_1`, `seq_2`, etc.
+    df = df.copy()
     df["name"] = df.index.map(lambda x: "seq_" + str(x))
     return df
 
@@ -162,6 +168,7 @@ def get_reverse_complement(df: pd.DataFrame, ntype: str) -> pd.DataFrame:
     :param ntype: nucleotide type, RNA or DNA
     :return: stores reverse complement in dataframe rev_comp column
     """
+    df = df.copy()
     df["rev_comp"] = df["sequence"].apply(
         lambda x: sequence.get_reverse_complement(x, ntype)
     )
@@ -212,6 +219,7 @@ def to_dna(df: pd.DataFrame) -> pd.DataFrame:
     converts each sequence in dataframe to DNA
     :return: None
     """
+    df = df.copy()
     df["sequence"] = df["sequence"].apply(sequence.to_dna)
     if "structure" in df.columns:
         df = df.drop(columns=["structure"])
@@ -223,6 +231,7 @@ def to_dna_template(df: pd.DataFrame) -> pd.DataFrame:
     converts each sequence in dataframe to DNA
     :return: None
     """
+    df = df.copy()
     df["sequence"] = df["sequence"].apply(sequence.to_dna_template)
     if "structure" in df.columns:
         df = df.drop(columns=["structure"])
@@ -250,6 +259,7 @@ def to_opool(df: pd.DataFrame, name: str, filename: str) -> None:
     :param filename: opool file path
     :return: None
     """
+    df = df.copy()
     df["name"] = name
     df = df[["name", "sequence"]]
     df.to_xlsx(filename, index=False)
@@ -260,6 +270,7 @@ def to_rna(df: pd.DataFrame) -> pd.DataFrame:
     converts each sequence in dataframe to DNA
     :return: None
     """
+    df = df.copy()
     df["sequence"] = df["sequence"].apply(sequence.to_rna)
     return df
 
@@ -273,6 +284,7 @@ def trim(df, p5_length, p3_length) -> pd.DataFrame:
     :param p3_length: length to trim from 3'
     :return: None
     """
+    df = df.copy()
     # trim `sequence` column and `structure` column
     p3_length = -p3_length
     if p5_length == 0:

@@ -94,3 +94,20 @@ def test_real_solution():
     bmin, bmax = bns[0]
     assert struct[bmin:bmax].sequence == "UCUAAC"
     assert struct[bmin:bmax].structure == "(((((("
+
+
+def test_failure():
+    seq = (
+        "GGAACAGCACUUCGGUGCAAACAUUGAGAGCGAGUAGCUUUCAAUGAAAGCUUGUGCCCGUUGUUAUGGUUU"
+        "GGGACCGAGGUUUUGAACUACUCUGAACACGGGAAACUGUACCCAGGGCGGAACCGUUUGACGUUUCGGGCCUA"
+        "AGUCGGCGGGUACAGGUACAAAGAAACAACAACAACAAC"
+    )
+    ss = (
+        "......((((....))))...((((((((((.....))))))))))...((((((((((((((....((((("
+        "(((((((((((((((.....(((((...((((....))))...))))))))))))..)))..))))))))))"
+        ".....))))))))))))))......................"
+    )
+    struct = SequenceStructure(seq, ss)
+    sub = SequenceStructure("GGGAAACU", "((....))")
+    r = find(struct, sub)
+    print(r)
