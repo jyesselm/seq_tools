@@ -1,6 +1,7 @@
 *.py[cod]
 build/
 dist/
+.vscode
 
 # C extensions
 *.so
