@@ -52,5 +52,5 @@ def test_convert_seq_and_ss_to_patterns():
     ss_sub = r"(?=(" + ss_sub.replace("(", r"\(") + r"))"
     assert r"(?=(\S\S))" == seq_sub
     assert r"(?=(\(\())" == ss_sub
-    #pattern_seq = re.compile(r"(?=(GG))")
-    #pattern_ss = re.compile(r"(?=(\(\())")
+    # pattern_seq = re.compile(r"(?=(GG))")
+    # pattern_ss = re.compile(r"(?=(\(\())")

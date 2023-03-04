@@ -111,9 +111,7 @@ class SequenceStructure:
         return SequenceStructure(sequence, structure)
 
 
-def find(
-    struct: SequenceStructure, sub: SequenceStructure, start=None, end=None
-):
+def find(struct: SequenceStructure, sub: SequenceStructure, start=None, end=None):
     """
     find the position of a substructure in a structure
     :param struct: the structure to search
@@ -142,15 +140,11 @@ def find(
             )
         )
         matches_seq = [
-            str(m.start() + start)
-            + "-"
-            + str(m.end() + len(m.group(1)) + start)
+            str(m.start() + start) + "-" + str(m.end() + len(m.group(1)) + start)
             for m in pattern_seq.finditer(struct.sequence)
         ]
         matches_ss = [
-            str(m.start() + start)
-            + "-"
-            + str(m.end() + len(m.group(1)) + start)
+            str(m.start() + start) + "-" + str(m.end() + len(m.group(1)) + start)
             for m in pattern_ss.finditer(struct.structure)
         ]
         matches = list(set(matches_seq).intersection(set(matches_ss)))
