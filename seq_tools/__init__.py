@@ -4,7 +4,7 @@ __init__.py for seq_tools
 
 __author__ = "Joe Yesselman"
 __email__ = "jyesselm@unl.edu"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from .dataframe import (
     add,
