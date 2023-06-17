@@ -23,7 +23,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="rna_seq_tools",
-    version="0.7.1",
+    version="0.7.2",
     description="simple functions for manipulating sequences and secondary "
     "structures in pandas dataframe format",
     long_description=readme,
