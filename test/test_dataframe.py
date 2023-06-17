@@ -12,6 +12,7 @@ from seq_tools.dataframe import (
     has_t7_promoter,
     has_5p_sequence,
     has_3p_sequence,
+    has_seq_struct,
     get_extinction_coeff,
     get_molecular_weight,
     get_reverse_complement,
@@ -22,6 +23,7 @@ from seq_tools.dataframe import (
     trim,
     transcribe,
 )
+from seq_tools.structure import SequenceStructure
 
 
 # generate test data ################################################################
@@ -138,6 +140,15 @@ def test_has_3p_sequence():
     assert has_3p
     has_3p = has_3p_sequence(df, "GGGG")
     assert not has_3p
+
+
+def test_has_seq_struct():
+    """
+    test has_seq_struct function
+    """
+    df = get_test_data_rna()
+    has_struct = has_seq_struct(df, SequenceStructure("GUUUUC", "(....)"))
+    assert has_struct
 
 
 def test_get_extinction_coeff_dna():

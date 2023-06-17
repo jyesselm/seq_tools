@@ -5,6 +5,7 @@ simple functions for manipulating sequences and secondary structures
 import re
 import itertools
 from dataclasses import dataclass
+import pandas as pd
 
 
 @dataclass(frozen=True, order=True)

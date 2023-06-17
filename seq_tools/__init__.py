@@ -15,6 +15,7 @@ from .dataframe import (
     has_t7_promoter,
     has_5p_sequence,
     has_3p_sequence,
+    has_seq_struct,
     get_default_names,
     get_extinction_coeff,
     get_length,

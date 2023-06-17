@@ -7,6 +7,8 @@ import editdistance
 import vienna
 
 from seq_tools import sequence, extinction_coeff
+from seq_tools.structure import SequenceStructure
+from seq_tools.structure import find as find_seq_struct
 
 
 def add(df: pd.DataFrame, p5_seq: str, p3_seq: str) -> pd.DataFrame:
@@ -209,6 +211,14 @@ def has_t7_promoter(df: pd.DataFrame) -> bool:
     has_t7 = df[df["sequence"].str.startswith("TTCTAATACGACTCACTATA")]
     if len(has_t7) != len(df):
         return False
+    return True
+
+
+def has_seq_struct(df: pd.DataFrame, seq_struct: SequenceStructure) -> bool:
+    for _, row in df.iterrows():
+        row_seq_struct = SequenceStructure(row["sequence"], row["structure"])
+        if find_seq_struct(row_seq_struct, seq_struct) == 0:
+            return False
     return True
 
 
