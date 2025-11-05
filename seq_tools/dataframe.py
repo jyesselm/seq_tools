@@ -3,13 +3,13 @@ module for working with dataframes that contain nucleotide sequences
 """
 
 import os
-import pandas as pd
-import numpy as np
-from typing import List, Optional
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import random
 
 import editdistance
+import numpy as np
+import pandas as pd
 import vienna
 
 from seq_tools import sequence, extinction_coeff
@@ -19,16 +19,15 @@ from seq_tools.config import T7_PROMOTER, DEFAULT_DNA_NTS, DEFAULT_RNA_NTS
 from seq_tools.validation import validate_dataframe, ensure_name_column
 
 
-def split(df: pd.DataFrame, n_chunks: int) -> List[pd.DataFrame]:
-    """
-    Splits a DataFrame into multiple chunks.
+def split(df: pd.DataFrame, n_chunks: int) -> list[pd.DataFrame]:
+    """Split a DataFrame into multiple chunks.
 
     Args:
-        df (pd.DataFrame): The DataFrame to be split.
-        n_chunks (int): The number of chunks to split the DataFrame into.
+        df: The DataFrame to be split.
+        n_chunks: The number of chunks to split the DataFrame into.
 
     Returns:
-        List[pd.DataFrame]: A list of DataFrames, each representing a chunk of the original DataFrame.
+        A list of DataFrames, each representing a chunk of the original DataFrame.
     """
     chunk_size = len(df) // n_chunks
     chunks = [df.iloc[i * chunk_size : (i + 1) * chunk_size] for i in range(n_chunks)]
@@ -40,17 +39,18 @@ def split(df: pd.DataFrame, n_chunks: int) -> List[pd.DataFrame]:
     return chunks
 
 
-def run_in_parallel(df: pd.DataFrame, func, threads: int) -> pd.DataFrame:
-    """
-    Runs a function in parallel on chunks of a DataFrame using multiple threads.
+def run_in_parallel(
+    df: pd.DataFrame, func: Callable[[pd.DataFrame], pd.DataFrame], threads: int
+) -> pd.DataFrame:
+    """Run a function in parallel on chunks of a DataFrame using multiple threads.
 
     Args:
-        df (pd.DataFrame): The DataFrame to process.
-        func (callable): The function to apply to each chunk of the DataFrame.
-        threads (int): The number of threads to use for parallel processing.
+        df: The DataFrame to process.
+        func: The function to apply to each chunk of the DataFrame.
+        threads: The number of threads to use for parallel processing.
 
     Returns:
-        pd.DataFrame: The combined results of applying the function to each chunk.
+        The combined results of applying the function to each chunk.
     """
     df_chunks = split(df, threads)
     results = []
@@ -65,12 +65,15 @@ def run_in_parallel(df: pd.DataFrame, func, threads: int) -> pd.DataFrame:
 
 
 def add(df: pd.DataFrame, p5_seq: str = "", p3_seq: str = "") -> pd.DataFrame:
-    """
-    adds a 5' and 3' sequence to the sequences in the dataframe
-    :param df: dataframe
-    :param p5_seq: 5' sequence
-    :param p3_seq: 3' sequence
-    :return: None
+    """Add a 5' and 3' sequence to the sequences in the dataframe.
+
+    Args:
+        df: DataFrame containing sequences.
+        p5_seq: 5' sequence to prepend.
+        p3_seq: 3' sequence to append.
+
+    Returns:
+        DataFrame with modified sequences. If structure column exists, it will be re-folded.
     """
     df = df.copy()
     df["sequence"] = df["sequence"].apply(lambda x: p5_seq + x + p3_seq)
@@ -80,10 +83,16 @@ def add(df: pd.DataFrame, p5_seq: str = "", p3_seq: str = "") -> pd.DataFrame:
 
 
 def calc_edit_distance(df: pd.DataFrame) -> float:
-    """
-    calculates the edit distance between each sequence in the dataframe
-    :param df: dataframe
-    :return: the edit distance
+    """Calculate the average minimum edit distance between sequences in the dataframe.
+
+    For each sequence, finds the minimum edit distance to any other sequence,
+    then returns the average of these minimum distances.
+
+    Args:
+        df: DataFrame containing sequences.
+
+    Returns:
+        Average minimum edit distance. Returns 0.0 if dataframe has only one sequence.
     """
     if len(df) == 1:
         return 0
@@ -102,13 +111,18 @@ def calc_edit_distance(df: pd.DataFrame) -> float:
     return avg
 
 
-def _compute_pairwise_edit_distances(chunk):
-    """
-    Helper function to compute pairwise edit distances for a chunk of sequence pairs.
-    Used for parallel processing.
+def _compute_pairwise_edit_distances(
+    chunk: list[tuple[int, int, str, str]],
+) -> dict[int, int]:
+    """Compute pairwise edit distances for a chunk of sequence pairs.
 
-    :param chunk: list of tuples (i, j, seq1, seq2)
-    :return: dictionary mapping indices to their minimum edit distances
+    Helper function used for parallel processing.
+
+    Args:
+        chunk: List of tuples (i, j, seq1, seq2) representing pairs to compare.
+
+    Returns:
+        Dictionary mapping sequence indices to their minimum edit distances.
     """
     results = {}
     for i, j, seq1, seq2 in chunk:
@@ -125,15 +139,21 @@ def _compute_pairwise_edit_distances(chunk):
 
 
 def calc_edit_distance_parallel(
-    df: pd.DataFrame, n_workers: Optional[int] = None, use_threads: bool = False
+    df: pd.DataFrame, n_workers: int | None = None, use_threads: bool = False
 ) -> float:
-    """
-    calculates the edit distance between each sequence in the dataframe using parallel processing
+    """Calculate the average minimum edit distance using parallel processing.
 
-    :param df: dataframe
-    :param n_workers: number of workers to use. If None, uses the number of CPU cores
-    :param use_threads: if True, use threads instead of processes
-    :return: the edit distance
+    For each sequence, finds the minimum edit distance to any other sequence,
+    then returns the average of these minimum distances. Uses parallel processing
+    to speed up computation for large datasets.
+
+    Args:
+        df: DataFrame containing sequences.
+        n_workers: Number of workers to use. If None, uses the number of CPU cores.
+        use_threads: If True, use threads instead of processes.
+
+    Returns:
+        Average minimum edit distance. Returns 0.0 if dataframe has only one sequence.
     """
     if len(df) == 1:
         return 0
@@ -172,10 +192,19 @@ def calc_edit_distance_parallel(
 
 
 def determine_ntype(df: pd.DataFrame) -> str:
-    """
-    determines the nucleotide type of the sequences in the dataframe
-    :param df: dataframe
-    :return: nucleotide type, RNA or DNA
+    """Determine the nucleotide type of the sequences in the dataframe.
+
+    Analyzes sequences for presence of T (DNA) or U (RNA) nucleotides.
+    Raises an error if both types are found in longer sequences.
+
+    Args:
+        df: DataFrame containing sequences.
+
+    Returns:
+        "RNA" or "DNA" based on nucleotide content.
+
+    Raises:
+        ValueError: If both DNA and RNA sequences are detected in longer sequences.
     """
     results = []
     for _, row in df.iterrows():
@@ -194,9 +223,16 @@ def determine_ntype(df: pd.DataFrame) -> str:
 
 
 def fold(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    folds each sequence in the dataframe
-    :param df: dataframe
+    """Fold each sequence in the dataframe using ViennaRNA.
+
+    Adds columns for structure (dot-bracket notation), mfe (minimum free energy),
+    and ens_defect (ensemble defect).
+
+    Args:
+        df: DataFrame containing sequences to fold.
+
+    Returns:
+        DataFrame with added 'structure', 'mfe', and 'ens_defect' columns.
     """
 
     def _fold(seq):
@@ -214,19 +250,28 @@ def fold(df: pd.DataFrame) -> pd.DataFrame:
 def get_extinction_coeff(
     df: pd.DataFrame, ntype: str, double_stranded: bool = False
 ) -> pd.DataFrame:
-    """
-    calculates the extinction coefficient for each sequence in the dataframe
-    :param df: dataframe
-    :param ntype: nucleotide type, RNA or DNA
-    :param double_stranded: is double stranded?
-    :return: None
+    """Calculate the extinction coefficient for each sequence in the dataframe.
+
+    For RNA sequences with structure information, uses structure-aware calculation.
+    Otherwise, uses standard sequence-based calculation.
+
+    Args:
+        df: DataFrame containing sequences.
+        ntype: Nucleotide type, "RNA" or "DNA".
+        double_stranded: Whether sequences are double-stranded.
+
+    Returns:
+        DataFrame with added 'extinction_coeff' column.
     """
 
-    def compute_w_struct(row) -> float:
-        """
-        computes the extinction coefficient for a sequence with a structure
-        :param row: dataframe row
-        :return: extinction coefficient
+    def compute_w_struct(row: pd.Series) -> float:
+        """Compute the extinction coefficient for a sequence with a structure.
+
+        Args:
+            row: DataFrame row containing 'sequence' and 'structure' columns.
+
+        Returns:
+            Extinction coefficient value.
         """
         return extinction_coeff.get_extinction_coeff(
             row["sequence"], ntype, double_stranded, row["structure"]
@@ -243,10 +288,13 @@ def get_extinction_coeff(
 
 
 def get_length(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    calculates the length of each sequence in the dataframe
-    :param df: dataframe
-    :return: None
+    """Calculate the length of each sequence in the dataframe.
+
+    Args:
+        df: DataFrame containing sequences.
+
+    Returns:
+        DataFrame with added 'length' column.
     """
     df = df.copy()
     df["length"] = df["sequence"].apply(len)
@@ -256,11 +304,15 @@ def get_length(df: pd.DataFrame) -> pd.DataFrame:
 def get_molecular_weight(
     df: pd.DataFrame, ntype: str, double_stranded: bool = False
 ) -> pd.DataFrame:
-    """
-    :param df: pandas data frame
-    :param ntype: nucleotide type, RNA or DNA
-    :param double_stranded: is double stranded?
-    :return: None
+    """Calculate the molecular weight for each sequence in the dataframe.
+
+    Args:
+        df: DataFrame containing sequences.
+        ntype: Nucleotide type, "RNA" or "DNA".
+        double_stranded: Whether sequences are double-stranded.
+
+    Returns:
+        DataFrame with added 'mw' column containing molecular weights.
     """
     df = df.copy()
     df["mw"] = df["sequence"].apply(
@@ -270,10 +322,18 @@ def get_molecular_weight(
 
 
 def get_default_names(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Adds names to dataframe, if not already present
-    :param df: dataframe
-    :return: dataframe with names
+    """Add default names to dataframe if not already present.
+
+    Creates names in the form 'seq_0', 'seq_1', etc. based on row indices.
+
+    Args:
+        df: DataFrame without a 'name' column.
+
+    Returns:
+        DataFrame with added 'name' column.
+
+    Raises:
+        ValueError: If dataframe already has a 'name' column.
     """
     if "name" in df.columns:
         raise ValueError("Dataframe already has names")
@@ -284,11 +344,14 @@ def get_default_names(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_reverse_complement(df: pd.DataFrame, ntype: str) -> pd.DataFrame:
-    """
-    reverse complements each sequence in the dataframe
-    :param df: dataframe
-    :param ntype: nucleotide type, RNA or DNA
-    :return: stores reverse complement in dataframe rev_comp column
+    """Reverse complement each sequence in the dataframe.
+
+    Args:
+        df: DataFrame containing sequences.
+        ntype: Nucleotide type, "RNA" or "DNA".
+
+    Returns:
+        DataFrame with added 'rev_comp' column containing reverse complements.
     """
     df = df.copy()
     df["rev_comp"] = df["sequence"].apply(
@@ -298,45 +361,52 @@ def get_reverse_complement(df: pd.DataFrame, ntype: str) -> pd.DataFrame:
 
 
 def has_5p_sequence(df: pd.DataFrame, p5_seq: str) -> bool:
-    """
-    checks to see if p5_seq is present in the 5' end of the sequence
-    :param df: dataframe
-    :return: True if 5' sequence is present, False otherwise
+    """Check if all sequences start with the given 5' sequence.
+
+    Args:
+        df: DataFrame containing sequences.
+        p5_seq: 5' sequence to check for.
+
+    Returns:
+        True if all sequences start with p5_seq, False otherwise.
     """
     return df["sequence"].str.startswith(p5_seq).all()
 
 
 def has_3p_sequence(df: pd.DataFrame, p3_seq: str) -> bool:
-    """
-    checks to see if p5_seq is present in the 3' end of the sequence
-    :param df: dataframe
-    :return: True if 3' sequence is present, False otherwise
+    """Check if all sequences end with the given 3' sequence.
+
+    Args:
+        df: DataFrame containing sequences.
+        p3_seq: 3' sequence to check for.
+
+    Returns:
+        True if all sequences end with p3_seq, False otherwise.
     """
     return df["sequence"].str.endswith(p3_seq).all()
 
 
 def has_sequence(df: pd.DataFrame, seq: str) -> bool:
-    """
-    checks to see if seq is present in the sequence
-    :param df: dataframe
-    :return: True if sequence is present, False otherwise
+    """Check if all sequences contain the given subsequence.
+
+    Args:
+        df: DataFrame containing sequences.
+        seq: Subsequence to search for.
+
+    Returns:
+        True if all sequences contain seq, False otherwise.
     """
     return df["sequence"].str.contains(seq).all()
 
 
 def has_t7_promoter(df: pd.DataFrame) -> bool:
-    """
-    Check if each sequence in the dataframe has a T7 promoter.
+    """Check if all sequences in the dataframe have a T7 promoter.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with sequences.
+    Args:
+        df: DataFrame with sequences.
 
-    Returns
-    -------
-    bool
-        True if all sequences have T7 promoter, False otherwise.
+    Returns:
+        True if all sequences start with T7 promoter, False otherwise.
     """
     has_t7 = df[df["sequence"].str.startswith(T7_PROMOTER)]
     if len(has_t7) != len(df):
@@ -345,6 +415,15 @@ def has_t7_promoter(df: pd.DataFrame) -> bool:
 
 
 def has_seq_struct(df: pd.DataFrame, seq_struct: SequenceStructure) -> bool:
+    """Check if all sequences in the dataframe contain the given sequence structure.
+
+    Args:
+        df: DataFrame containing 'sequence' and 'structure' columns.
+        seq_struct: SequenceStructure object to search for.
+
+    Returns:
+        True if all sequences contain the structure, False otherwise.
+    """
     for _, row in df.iterrows():
         row_seq_struct = SequenceStructure(row["sequence"], row["structure"])
         if find_seq_struct(row_seq_struct, seq_struct) == 0:
@@ -353,9 +432,15 @@ def has_seq_struct(df: pd.DataFrame, seq_struct: SequenceStructure) -> bool:
 
 
 def to_dna(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    converts each sequence in dataframe to DNA
-    :return: None
+    """Convert each sequence in dataframe to DNA.
+
+    Replaces U with T in all sequences. Removes structure column if present.
+
+    Args:
+        df: DataFrame containing sequences (presumably RNA).
+
+    Returns:
+        DataFrame with sequences converted to DNA.
     """
     df = df.copy()
     df["sequence"] = df["sequence"].apply(sequence.to_dna)
@@ -365,9 +450,15 @@ def to_dna(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def to_dna_template(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    converts each sequence in dataframe to DNA
-    :return: None
+    """Convert each sequence in dataframe to DNA template.
+
+    Replaces U with T and reverse complements sequences. Removes structure column if present.
+
+    Args:
+        df: DataFrame containing sequences.
+
+    Returns:
+        DataFrame with sequences converted to DNA template.
     """
     df = df.copy()
     df["sequence"] = df["sequence"].apply(sequence.to_dna_template)
@@ -377,11 +468,11 @@ def to_dna_template(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def to_fasta(df: pd.DataFrame, filename: str) -> None:
-    """
-    writes the sequences in the dataframe to a fasta file
-    :param df: dataframe
-    :param filename: fasta file path
-    :return: None
+    """Write the sequences in the dataframe to a FASTA file.
+
+    Args:
+        df: DataFrame containing 'name' and 'sequence' columns.
+        filename: Path to output FASTA file.
     """
     with open(filename, "w", encoding="utf-8") as f:
         for _, row in df.iterrows():
@@ -390,12 +481,12 @@ def to_fasta(df: pd.DataFrame, filename: str) -> None:
 
 
 def to_opool(df: pd.DataFrame, name: str, filename: str) -> None:
-    """
-    writes the sequences in the dataframe to an opool file
-    :param df: dataframe
-    :param name: opool name
-    :param filename: opool file path
-    :return: None
+    """Write the sequences in the dataframe to an opool file.
+
+    Args:
+        df: DataFrame containing sequences.
+        name: Opool name to assign to all sequences.
+        filename: Path to output opool (Excel) file.
     """
     df = df.copy()
     df["name"] = name
@@ -404,9 +495,15 @@ def to_opool(df: pd.DataFrame, name: str, filename: str) -> None:
 
 
 def to_rna(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    converts each sequence in dataframe to DNA
-    :return: None
+    """Convert each sequence in dataframe to RNA.
+
+    Replaces T with U in all sequences.
+
+    Args:
+        df: DataFrame containing sequences (presumably DNA).
+
+    Returns:
+        DataFrame with sequences converted to RNA.
     """
     df = df.copy()
     df["sequence"] = df["sequence"].apply(sequence.to_rna)
@@ -414,13 +511,17 @@ def to_rna(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def trim(df: pd.DataFrame, p5_length: int, p3_length: int) -> pd.DataFrame:
-    """
-    takes a data frame and trims the sequences. If there is a structure
-    it will also trim the structure
-    :param df: dataframe
-    :param p5_length: length to trim from 5'
-    :param p3_length: length to trim from 3'
-    :return: None
+    """Trim sequences from the 5' and 3' ends.
+
+    If a structure column exists, it will also be trimmed to match.
+
+    Args:
+        df: DataFrame containing sequences and optionally structures.
+        p5_length: Number of bases to trim from the 5' end.
+        p3_length: Number of bases to trim from the 3' end.
+
+    Returns:
+        DataFrame with trimmed sequences and structures.
     """
     df = df.copy()
     # trim `sequence` column and `structure` column
@@ -435,12 +536,21 @@ def trim(df: pd.DataFrame, p5_length: int, p3_length: int) -> pd.DataFrame:
     return df
 
 
-def transcribe(df: pd.DataFrame, ignore_missing_t7=False) -> pd.DataFrame:
-    """
-    transcribes each sequence in the dataframe (DNA -> RNA) removes t7 promoter
-    :param df: dataframe with DNA template sequences
-    :param ignore_missing_t7: ignore sequences that don't have a T7 promoter
-    :return: dataframe with RNA sequences
+def transcribe(df: pd.DataFrame, ignore_missing_t7: bool = False) -> pd.DataFrame:
+    """Transcribe DNA template sequences to RNA and remove T7 promoter.
+
+    Converts DNA to RNA, removes the T7 promoter (first 20 bases), and folds
+    the resulting RNA sequences.
+
+    Args:
+        df: DataFrame with DNA template sequences.
+        ignore_missing_t7: If True, proceed even if sequences don't have T7 promoter.
+
+    Returns:
+        DataFrame with transcribed RNA sequences and folded structures.
+
+    Raises:
+        ValueError: If not all sequences have T7 promoter and ignore_missing_t7 is False.
     """
     if not has_t7_promoter(df) and not ignore_missing_t7:
         raise ValueError("not all sequences start with T7 promoter")
@@ -455,32 +565,28 @@ def generate_mutated_sequences(
     template: str,
     num_mutations: int,
     num_sequences: int,
-    p5_seq: Optional[str] = None,
-    p3_seq: Optional[str] = None,
+    p5_seq: str | None = None,
+    p3_seq: str | None = None,
     ntype: str = "DNA",
 ) -> pd.DataFrame:
-    """
-    Generate mutated sequences from a template sequence with optional constant 5' and 3' ends.
+    """Generate mutated sequences from a template with optional constant 5' and 3' ends.
 
-    Parameters
-    ----------
-    template : str
-        Template sequence to mutate.
-    num_mutations : int
-        Number of mutations to introduce per sequence.
-    num_sequences : int
-        Number of mutated sequences to generate.
-    p5_seq : str, optional
-        Optional constant 5' sequence (if provided, mutations only in middle region).
-    p3_seq : str, optional
-        Optional constant 3' sequence (if provided, mutations only in middle region).
-    ntype : str, optional
-        Nucleotide type: "DNA" or "RNA" (default: "DNA").
+    Mutations are randomly distributed across the variable region (excluding
+    constant 5' and 3' sequences if provided).
 
-    Returns
-    -------
-    pd.DataFrame
+    Args:
+        template: Template sequence to mutate.
+        num_mutations: Number of mutations to introduce per sequence.
+        num_sequences: Number of mutated sequences to generate.
+        p5_seq: Optional constant 5' sequence (mutations only in middle region if provided).
+        p3_seq: Optional constant 3' sequence (mutations only in middle region if provided).
+        ntype: Nucleotide type: "DNA" or "RNA". Defaults to "DNA".
+
+    Returns:
         DataFrame with mutated sequences in 'name' and 'sequence' columns.
+
+    Raises:
+        ValueError: If template is too short for specified constant sequences or mutations.
     """
     nucleotides = {"DNA": DEFAULT_DNA_NTS, "RNA": DEFAULT_RNA_NTS}
     nucs = nucleotides.get(ntype, DEFAULT_DNA_NTS)
@@ -561,30 +667,26 @@ def generate_mutated_sequences(
 def generate_random_sequences(
     length: int,
     num_sequences: int,
-    p5_seq: Optional[str] = None,
-    p3_seq: Optional[str] = None,
+    p5_seq: str | None = None,
+    p3_seq: str | None = None,
     ntype: str = "DNA",
 ) -> pd.DataFrame:
-    """
-    Generate random sequences with optional constant 5' and 3' ends.
+    """Generate random sequences with optional constant 5' and 3' ends.
 
-    Parameters
-    ----------
-    length : int
-        Total length of sequences (including constant 5' and 3' if provided).
-    num_sequences : int
-        Number of random sequences to generate.
-    p5_seq : str, optional
-        Optional constant 5' sequence.
-    p3_seq : str, optional
-        Optional constant 3' sequence.
-    ntype : str, optional
-        Nucleotide type: "DNA" or "RNA" (default: "DNA").
+    The middle region between constant sequences (if provided) is randomly generated.
 
-    Returns
-    -------
-    pd.DataFrame
+    Args:
+        length: Total length of sequences (including constant 5' and 3' if provided).
+        num_sequences: Number of random sequences to generate.
+        p5_seq: Optional constant 5' sequence.
+        p3_seq: Optional constant 3' sequence.
+        ntype: Nucleotide type: "DNA" or "RNA". Defaults to "DNA".
+
+    Returns:
         DataFrame with random sequences in 'name' and 'sequence' columns.
+
+    Raises:
+        ValueError: If length is not greater than the sum of constant sequence lengths.
     """
     nucleotides = {"DNA": DEFAULT_DNA_NTS, "RNA": DEFAULT_RNA_NTS}
     nucs = nucleotides.get(ntype, DEFAULT_DNA_NTS)
