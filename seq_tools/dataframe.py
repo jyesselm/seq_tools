@@ -15,6 +15,8 @@ import vienna
 from seq_tools import sequence, extinction_coeff
 from seq_tools.structure import SequenceStructure
 from seq_tools.structure import find as find_seq_struct
+from seq_tools.config import T7_PROMOTER, DEFAULT_DNA_NTS, DEFAULT_RNA_NTS
+from seq_tools.validation import validate_dataframe, ensure_name_column
 
 
 def split(df: pd.DataFrame, n_chunks: int) -> List[pd.DataFrame]:
@@ -62,7 +64,7 @@ def run_in_parallel(df: pd.DataFrame, func, threads: int) -> pd.DataFrame:
     return df_results
 
 
-def add(df: pd.DataFrame, p5_seq: str, p3_seq: str) -> pd.DataFrame:
+def add(df: pd.DataFrame, p5_seq: str = "", p3_seq: str = "") -> pd.DataFrame:
     """
     adds a 5' and 3' sequence to the sequences in the dataframe
     :param df: dataframe
@@ -210,7 +212,7 @@ def fold(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_extinction_coeff(
-    df: pd.DataFrame, ntype: str, double_stranded: bool
+    df: pd.DataFrame, ntype: str, double_stranded: bool = False
 ) -> pd.DataFrame:
     """
     calculates the extinction coefficient for each sequence in the dataframe
@@ -252,7 +254,7 @@ def get_length(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_molecular_weight(
-    df: pd.DataFrame, ntype: str, double_stranded: bool
+    df: pd.DataFrame, ntype: str, double_stranded: bool = False
 ) -> pd.DataFrame:
     """
     :param df: pandas data frame
@@ -324,11 +326,19 @@ def has_sequence(df: pd.DataFrame, seq: str) -> bool:
 
 def has_t7_promoter(df: pd.DataFrame) -> bool:
     """
-    checks if each sequence in the dataframe has a T7 promoter
-    :param df: dataframe
-    :return: None
+    Check if each sequence in the dataframe has a T7 promoter.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with sequences.
+
+    Returns
+    -------
+    bool
+        True if all sequences have T7 promoter, False otherwise.
     """
-    has_t7 = df[df["sequence"].str.startswith("TTCTAATACGACTCACTATA")]
+    has_t7 = df[df["sequence"].str.startswith(T7_PROMOTER)]
     if len(has_t7) != len(df):
         return False
     return True
@@ -403,7 +413,7 @@ def to_rna(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def trim(df, p5_length, p3_length) -> pd.DataFrame:
+def trim(df: pd.DataFrame, p5_length: int, p3_length: int) -> pd.DataFrame:
     """
     takes a data frame and trims the sequences. If there is a structure
     it will also trim the structure
@@ -450,18 +460,30 @@ def generate_mutated_sequences(
     ntype: str = "DNA",
 ) -> pd.DataFrame:
     """
-    generates mutated sequences from a template sequence with optional constant 5' and 3' ends
+    Generate mutated sequences from a template sequence with optional constant 5' and 3' ends.
 
-    :param template: template sequence to mutate
-    :param num_mutations: number of mutations to introduce per sequence
-    :param num_sequences: number of mutated sequences to generate
-    :param p5_seq: optional constant 5' sequence (if provided, mutations only in middle region)
-    :param p3_seq: optional constant 3' sequence (if provided, mutations only in middle region)
-    :param ntype: nucleotide type (DNA or RNA)
-    :return: dataframe with mutated sequences
+    Parameters
+    ----------
+    template : str
+        Template sequence to mutate.
+    num_mutations : int
+        Number of mutations to introduce per sequence.
+    num_sequences : int
+        Number of mutated sequences to generate.
+    p5_seq : str, optional
+        Optional constant 5' sequence (if provided, mutations only in middle region).
+    p3_seq : str, optional
+        Optional constant 3' sequence (if provided, mutations only in middle region).
+    ntype : str, optional
+        Nucleotide type: "DNA" or "RNA" (default: "DNA").
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with mutated sequences in 'name' and 'sequence' columns.
     """
-    nucleotides = {"DNA": ["A", "T", "G", "C"], "RNA": ["A", "U", "G", "C"]}
-    nucs = nucleotides.get(ntype, nucleotides["DNA"])
+    nucleotides = {"DNA": DEFAULT_DNA_NTS, "RNA": DEFAULT_RNA_NTS}
+    nucs = nucleotides.get(ntype, DEFAULT_DNA_NTS)
 
     # Determine the variable region to mutate
     if p5_seq and p3_seq:
@@ -544,17 +566,28 @@ def generate_random_sequences(
     ntype: str = "DNA",
 ) -> pd.DataFrame:
     """
-    generates random sequences with optional constant 5' and 3' ends
+    Generate random sequences with optional constant 5' and 3' ends.
 
-    :param length: total length of sequences (including constant 5' and 3' if provided)
-    :param num_sequences: number of random sequences to generate
-    :param p5_seq: optional constant 5' sequence
-    :param p3_seq: optional constant 3' sequence
-    :param ntype: nucleotide type (DNA or RNA)
-    :return: dataframe with random sequences
+    Parameters
+    ----------
+    length : int
+        Total length of sequences (including constant 5' and 3' if provided).
+    num_sequences : int
+        Number of random sequences to generate.
+    p5_seq : str, optional
+        Optional constant 5' sequence.
+    p3_seq : str, optional
+        Optional constant 3' sequence.
+    ntype : str, optional
+        Nucleotide type: "DNA" or "RNA" (default: "DNA").
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with random sequences in 'name' and 'sequence' columns.
     """
-    nucleotides = {"DNA": ["A", "T", "G", "C"], "RNA": ["A", "U", "G", "C"]}
-    nucs = nucleotides.get(ntype, nucleotides["DNA"])
+    nucleotides = {"DNA": DEFAULT_DNA_NTS, "RNA": DEFAULT_RNA_NTS}
+    nucs = nucleotides.get(ntype, DEFAULT_DNA_NTS)
 
     # Calculate the length of the random middle region
     p5_len = len(p5_seq) if p5_seq else 0

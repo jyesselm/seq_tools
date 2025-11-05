@@ -113,7 +113,7 @@ def test_has_t7_promoter():
     df = get_test_data_dna()
     has_t7 = has_t7_promoter(df)
     assert not has_t7
-    df.iloc[0]["sequence"] = "TTCTAATACGACTCACTATA" + "GAAAATTTTGGGGCCCC"
+    df.loc[0, "sequence"] = "TTCTAATACGACTCACTATA" + "GAAAATTTTGGGGCCCC"
     has_t7 = has_t7_promoter(df)
     assert has_t7
 
@@ -254,7 +254,7 @@ def test_trim():
     df = trim(df, 100, 100)
     assert df["sequence"][0] == ""
     df = get_test_data_dna()
-    df.iloc[0]["sequence"] = "TTCTAATACGACTCACTATAGGGGTTTTCCCC"
+    df.loc[0, "sequence"] = "TTCTAATACGACTCACTATAGGGGTTTTCCCC"
 
 
 def test_transcribe():
@@ -262,6 +262,6 @@ def test_transcribe():
     test transcribe function
     """
     df = get_test_data_dna()
-    df.iloc[0]["sequence"] = "TTCTAATACGACTCACTATAGGGGTTTTCCCC"
+    df.loc[0, "sequence"] = "TTCTAATACGACTCACTATAGGGGTTTTCCCC"
     df = transcribe(df)
     assert df["sequence"][0] == "GGGGUUUUCCCC"

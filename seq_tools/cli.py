@@ -9,6 +9,7 @@ import pandas as pd
 
 from seq_tools import sequence, dataframe
 from seq_tools.logger import setup_applevel_logger, get_logger
+from seq_tools.validation import validate_dataframe as validate_df, ensure_name_column
 
 pd.set_option("display.max_colwidth", None)
 
@@ -21,10 +22,8 @@ def validate_dataframe(df) -> None:
     :param df: dataframe with sequences
     :return: None
     """
-    if "sequence" not in df.columns:
-        raise ValueError("sequence column not found")
-    if "name" not in df.columns:
-        df["name"] = [f"seq_{i}" for i in range(len(df))]
+    validate_df(df, require_name=False)
+    ensure_name_column(df)
 
 
 def get_input_dataframe(data) -> pd.DataFrame:

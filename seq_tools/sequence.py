@@ -2,8 +2,11 @@
 simple functions for gathering information about a sequence.
 """
 
+from typing import Optional
+from seq_tools.config import DNA_MW, RNA_MW, RC_DNA, RC_RNA, T7_PROMOTER
 
-def get_max_stretch(seq) -> float:
+
+def get_max_stretch(seq: str) -> float:
     """
     computes max stretch of the same letter in string
     """
@@ -24,24 +27,40 @@ def get_max_stretch(seq) -> float:
     return max_stretch
 
 
-def get_molecular_weight(seq, ntype="DNA", double_stranded=False) -> float:
+def get_molecular_weight(
+    seq: str, ntype: str = "DNA", double_stranded: bool = False
+) -> float:
     """
-    returns the molecular weight of a sequence
-    :param seq: the sequence
-    :param ntype: type of sequence (DNA or RNA)
-    :param double_stranded: is the sequence double stranded?
-    :return: float
-    """
-    rna_mw = {"A": 347.2, "C": 323.2, "G": 363.2, "U": 324.2}
-    dna_mw = {"A": 331.2, "C": 307.2, "G": 347.2, "T": 322.2}
+    Calculate the molecular weight of a nucleic acid sequence.
 
-    def compute_mw(seq, ntype):
-        molecular_weight = 0
+    Parameters
+    ----------
+    seq : str
+        The nucleotide sequence.
+    ntype : str, optional
+        Type of nucleic acid: "DNA" or "RNA" (default: "DNA").
+    double_stranded : bool, optional
+        Whether the sequence is double-stranded (default: False).
+
+    Returns
+    -------
+    float
+        Molecular weight in Daltons.
+
+    Examples
+    --------
+    >>> get_molecular_weight("ATCG", "DNA")
+    1331.6
+    >>> get_molecular_weight("AUCG", "RNA", double_stranded=True)
+    2726.8
+    """
+    def compute_mw(seq: str, ntype: str) -> float:
+        molecular_weight = 0.0
         for nuc in seq:
             if ntype == "RNA":
-                molecular_weight += rna_mw[nuc]
+                molecular_weight += RNA_MW[nuc]
             else:
-                molecular_weight += dna_mw[nuc]
+                molecular_weight += DNA_MW[nuc]
         return molecular_weight
 
     # enforce RNA or DNA typing
@@ -51,55 +70,108 @@ def get_molecular_weight(seq, ntype="DNA", double_stranded=False) -> float:
         seq = to_dna(seq)
     molecular_weight = compute_mw(seq, ntype)
     if double_stranded:
-        rev_comp = get_reverse_complement(seq, type)
+        rev_comp = get_reverse_complement(seq, ntype)
         molecular_weight += compute_mw(rev_comp, ntype)
     return molecular_weight
 
 
-def get_reverse_complement(seq, ntype="DNA") -> str:
+def get_reverse_complement(seq: str, ntype: str = "DNA") -> str:
     """
-    returns the reverse complement of a sequence
-    :param seq: sequence to reverse complement
-    :param ntype: type of sequence (DNA or RNA)
-    :return: reverse complement of sequence
+    Calculate the reverse complement of a nucleic acid sequence.
+
+    Parameters
+    ----------
+    seq : str
+        Sequence to reverse complement.
+    ntype : str, optional
+        Type of nucleic acid: "DNA" or "RNA" (default: "DNA").
+
+    Returns
+    -------
+    str
+        Reverse complement of the sequence.
+
+    Examples
+    --------
+    >>> get_reverse_complement("ATCG", "DNA")
+    'CGAT'
+    >>> get_reverse_complement("AUCG", "RNA")
+    'CGAU'
     """
     if ntype == "RNA":
         seq = to_rna(seq)
     else:
         seq = to_dna(seq)
     rev_comp = ""
-    rc_dna = {"A": "T", "T": "A", "G": "C", "C": "G"}
-    rc_rna = {"A": "U", "U": "A", "G": "C", "C": "G"}
     for nuc in seq:
         if ntype == "RNA":
-            rev_comp += rc_rna[nuc]
+            rev_comp += RC_RNA[nuc]
         else:
-            rev_comp += rc_dna[nuc]
+            rev_comp += RC_DNA[nuc]
     return rev_comp[::-1]
 
 
-def to_dna(seq) -> str:
+def to_dna(seq: str) -> str:
     """
-    Convert RNA sequence to DNA
-    :param seq: RNA sequence
-    :return: DNA sequence
+    Convert RNA sequence to DNA (replaces U with T).
+
+    Parameters
+    ----------
+    seq : str
+        RNA sequence.
+
+    Returns
+    -------
+    str
+        DNA sequence.
+
+    Examples
+    --------
+    >>> to_dna("AUCG")
+    'ATCG'
     """
     return seq.replace("U", "T")
 
 
-def to_dna_template(seq) -> str:
+def to_dna_template(seq: str) -> str:
     """
-    Convert RNA sequence to DNA
-    :param seq: RNA sequence
-    :return: DNA sequence
+    Convert RNA sequence to DNA template with T7 promoter.
+
+    Parameters
+    ----------
+    seq : str
+        RNA sequence.
+
+    Returns
+    -------
+    str
+        DNA template sequence with T7 promoter at 5' end.
+
+    Examples
+    --------
+    >>> to_dna_template("AUCG")
+    'TTCTAATACGACTCACTATAATCG'
     """
-    return "TTCTAATACGACTCACTATA" + to_dna(seq)
+    return T7_PROMOTER + to_dna(seq)
 
 
-def to_rna(seq) -> str:
+def to_rna(seq: str) -> str:
     """
-    Convert DNA sequence to RNA
-    :param seq: DNA sequence
-    :return: RNA sequence
+    Convert DNA sequence to RNA (replaces T with U).
+
+    Parameters
+    ----------
+    seq : str
+        DNA sequence.
+
+    Returns
+    -------
+    str
+        RNA sequence.
+
+    Examples
+    --------
+    >>> to_rna("ATCG")
+    'AUCG'
     """
     return seq.replace("T", "U")
