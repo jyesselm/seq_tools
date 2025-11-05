@@ -3,13 +3,143 @@
 import re
 import itertools
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from seq_tools.sequence import get_reverse_complement
 
 # Constant for strand separator in multi-strand structures
 STRAND_SEPARATOR = "&"
+
+
+def connectivity_list(structure: str) -> List[int]:
+    """Generates a connectivity list or pairmap from a dot-bracket secondary structure.
+
+    The list has the index of a position's complement, if it is a '.', it will have a
+      -1 instead.
+
+    Args:
+        structure (str): A dot-bracket structure.
+
+    Returns:
+        List[int]: The connectivity list or pairmap.
+
+    Raises:
+        TypeError: If the number of left parentheses exceeds the number of right
+          parentheses.
+    """
+    connections, pairs = [-1] * len(structure), []
+    for index, db in enumerate(structure):
+        if db == "(":
+            pairs.append(index)
+        elif db == ")":
+            complement = pairs.pop()
+            connections[complement] = index
+            connections[index] = complement
+    if len(pairs):
+        raise TypeError("Unbalanced parentheses in structure")
+    return connections
+
+
+class ConnectivityList:
+    """Represents a connectivity list for RNA secondary structure.
+
+    Attributes:
+        connections (List[int]): A list of indices representing the connectivity
+            between nucleotides.
+        sequence (str): The RNA sequence.
+    """
+
+    def __init__(self, sequence: str, structure: str):
+        """Initializes a ConnectivityList object.
+
+        Args:
+            sequence (str): The RNA sequence.
+            structure (str): The RNA secondary structure.
+
+        """
+        self.connections = connectivity_list(structure)
+        self.sequence = sequence
+
+    def is_nucleotide_paired(self, index: int) -> bool:
+        """Checks if a nucleotide at a given index is paired.
+
+        Args:
+            index (int): The index of the nucleotide.
+
+        Returns:
+            bool: True if the nucleotide is paired, False otherwise.
+
+        """
+        return self.connections[index] != -1
+
+    def get_paired_nucleotide(self, index: int) -> int:
+        """Returns the index of the nucleotide paired with the nucleotide at the given index.
+
+        Args:
+            index (int): The index of the nucleotide.
+
+        Returns:
+            int: The index of the paired nucleotide.
+
+        Raises:
+            ValueError: If the nucleotide at the given index is not paired.
+
+        """
+        if not self.is_nucleotide_paired(index):
+            raise ValueError(f"Nucleotide at index {index} is not paired")
+        return self.connections[index]
+
+    def get_basepair(self, index: int) -> str:
+        """Returns the base pair of the nucleotide at the given index.
+
+        Args:
+            index (int): The index of the nucleotide.
+
+        Returns:
+            str: The base pair of the nucleotide.
+
+        """
+        if not self.is_nucleotide_paired(index):
+            return "."
+        return self.sequence[index] + self.sequence[self.get_paired_nucleotide(index)]
+
+
+@dataclass(frozen=True, order=True)
+class RNASegment:
+    """Represents an RNA segment with strands containing all indices.
+
+    A RNASegment represents one occurrence of a substructure within a structure.
+    Each strand contains all the indices in that strand (e.g., [2,3,4,5,6,7]).
+
+    For single-strand searches, strands contains one list of indices.
+    For multi-strand searches, strands contains multiple lists of indices,
+    one for each strand in the match. For multi-strand matches, the ends
+    of adjacent strands must be paired according to the connectivity list.
+
+    Attributes:
+        strands: List of lists of indices, where each list represents all
+                 positions in a strand. For single-strand matches, contains one list.
+
+    Examples:
+        >>> struct = SequenceStructure("GGGAAACCC", "(((...)))")
+        >>> sub = SequenceStructure("GAAAC", "(...)")
+        >>> segments = find_seq_struct(struct, sub)
+        >>> segment = segments[0]
+        >>> segment.strands
+        [[2, 3, 4, 5, 6, 7]]
+    """
+
+    strands: tuple[list[int], ...]
+
+    def __post_init__(self) -> None:
+        """Validate that strands is not empty."""
+        if not self.strands:
+            raise ValueError("RNASegment must contain at least one strand")
+
+    def __repr__(self) -> str:
+        """Return string representation of the segment."""
+        return f"RNASegment(strands={self.strands})"
 
 
 @dataclass(frozen=True, order=True)
@@ -647,37 +777,34 @@ def find_seq_struct(
     sub: SequenceStructure,
     start: int | None = None,
     end: int | None = None,
-    format: str = "legacy",
-) -> list[tuple[list[int], ...]] | list[Match]:
+) -> list[RNASegment]:
     """Find positions of a substructure within a structure.
 
-    Alias for `find` function for backward compatibility.
+    Returns RNA segments with strands containing all indices for each match.
+    For multi-strand matches, validates that strand ends are paired using
+    connectivity list.
 
     Args:
         struct: The structure to search within.
         sub: The substructure to search for.
         start: Start position for search (default: 0).
         end: End position for search (default: end of structure).
-        format: Output format. "legacy" (default) returns the old format:
-                list of tuples with lists. "match" returns a list of Match objects
-                which are more readable.
 
     Returns:
-        If format="legacy": List of matches, where each match is a tuple of strand
-        positions. Each strand position is [start, end] pair.
-
-        If format="match": List of Match objects with a cleaner interface.
+        List of RNASegment objects, where each segment contains strands with
+        all indices (e.g., [2,3,4,5,6,7] instead of just [2,7]).
 
     Examples:
         >>> struct = SequenceStructure("GGGAAACCC", "(((...)))")
         >>> sub = SequenceStructure("GAAAC", "(...)")
-        >>> find_seq_struct(struct, sub, format="match")
-        [Match(start=2, end=7)]
+        >>> segments = find_seq_struct(struct, sub)
+        >>> segments[0].strands
+        [[2, 3, 4, 5, 6, 7]]
 
     See Also:
         find: Main function that performs the search.
     """
-    return find(struct, sub, start, end, format=format)
+    return find(struct, sub, start, end, format="segment")
 
 
 def find(
@@ -686,7 +813,7 @@ def find(
     start: int | None = None,
     end: int | None = None,
     format: str = "legacy",
-) -> list[tuple[list[int], ...]] | list[Match]:
+) -> list[tuple[list[int], ...]] | list[Match] | list[RNASegment]:
     """Find all positions where a substructure appears within a structure.
 
     Searches for matches where both the sequence pattern and structure pattern
@@ -699,8 +826,8 @@ def find(
         start: Start position for search range. If None, starts at 0.
         end: End position for search range. If None, ends at structure length.
         format: Output format. "legacy" (default) returns the old format:
-                list of tuples with lists. "match" returns a list of Match objects
-                which are more readable.
+                list of tuples with lists. "match" returns a list of Match objects.
+                "segment" returns a list of RNASegment objects with all indices.
 
     Returns:
         If format="legacy": List of all matches. Each match is a tuple of strands,
@@ -712,6 +839,10 @@ def find(
         Single-strand matches have .start and .end properties, and all matches
         have .strands attribute.
 
+        If format="segment": List of RNASegment objects, where each strand contains
+        all indices (e.g., [2,3,4,5,6,7]). For multi-strand matches, validates
+        that strand ends are paired using connectivity list.
+
     Examples:
         >>> struct = SequenceStructure("GGGAAACCC", "(((...)))")
         >>> sub = SequenceStructure("GAAAC", "(...)")
@@ -719,13 +850,13 @@ def find(
         [[[2, 7]]]
         >>> find(struct, sub, format="match")
         [Match(start=2, end=7)]
+        >>> find(struct, sub, format="segment")
+        [RNASegment(strands=([2, 3, 4, 5, 6, 7],))]
 
         >>> struct = SequenceStructure("GGGAAACCC", "(((...)))")
         >>> sub = SequenceStructure("GGG&CCC", "(((&)))")
-        >>> find(struct, sub)
-        [[[0, 3], [6, 9]]]
-        >>> find(struct, sub, format="match")
-        [Match(strands=((0, 3), (6, 9)))]
+        >>> find(struct, sub, format="segment")
+        [RNASegment(strands=([0, 1, 2], [6, 7, 8]))]
     """
     if start is None:
         start = 0
@@ -738,10 +869,16 @@ def find(
             f"structure length={len(struct)}"
         )
 
-    if format not in ("legacy", "match"):
-        raise ValueError(f'Invalid format: {format}. Must be "legacy" or "match".')
+    if format not in ("legacy", "match", "segment"):
+        raise ValueError(
+            f'Invalid format: {format}. Must be "legacy", "match", or "segment".'
+        )
 
-    struct = struct[start:end]
+    # Get connectivity list for the full structure (before slicing)
+    full_struct_connections = connectivity_list(struct.structure)
+
+    # Work with the search range
+    struct_slice = struct[start:end]
     strands = sub.split_strands()
     strand_matches: list[list[list[int]]] = []
 
@@ -763,13 +900,13 @@ def find(
         # Find all sequence matches
         matches_seq = [
             str(m.start() + start) + "-" + str(m.start() + len(m.group(1)) + start)
-            for m in pattern_seq.finditer(struct.sequence)
+            for m in pattern_seq.finditer(struct_slice.sequence)
         ]
 
         # Find all structure matches
         matches_ss = [
             str(m.start() + start) + "-" + str(m.start() + len(m.group(1)) + start)
-            for m in pattern_ss.finditer(struct.structure)
+            for m in pattern_ss.finditer(struct_slice.structure)
         ]
 
         # Find intersection (matches where both sequence and structure match)
@@ -778,9 +915,16 @@ def find(
         matches = [list(map(int, i.split("-"))) for i in matches]
         strand_matches.append(matches)
 
-    # Generate all combinations of strand matches using Cartesian product
-    # Note: itertools.product returns tuples, preserving original return format
+    # Generate all combinations using itertools.product
     all_matches = list(itertools.product(*strand_matches))
+
+    # Filter to only keep valid combinations where adjacent strands are connected
+    if len(strands) > 1:
+        all_matches = _filter_valid_combinations(all_matches, full_struct_connections)
+
+    # For segment format, return RNASegment objects with all indices
+    if format == "segment":
+        return _build_segments_from_matches(all_matches)
 
     if format == "match":
         # Convert to Match objects for cleaner interface
@@ -789,3 +933,88 @@ def find(
         ]
 
     return all_matches
+
+
+def _filter_valid_combinations(
+    combinations: list[tuple[list[int], ...]],
+    connections: List[int],
+) -> list[tuple[list[int], ...]]:
+    """Filter combinations to only keep those where adjacent strands are connected.
+
+    Args:
+        combinations: List of combinations, where each combination is a tuple of [start, end] pairs.
+        connections: Connectivity list from the full structure.
+
+    Returns:
+        List of valid combinations where adjacent strand ends are paired.
+    """
+    valid = []
+    for combo in combinations:
+        if _are_strands_connected(combo, connections):
+            valid.append(combo)
+    return valid
+
+
+def _are_strands_connected(
+    combo: tuple[list[int], ...],
+    connections: List[int],
+) -> bool:
+    """Check if adjacent strands in a combination are connected at their ends.
+
+    Args:
+        combo: Tuple of [start, end] pairs for each strand.
+        connections: Connectivity list from the full structure.
+
+    Returns:
+        True if all adjacent strands are connected, False otherwise.
+    """
+    if len(combo) <= 1:
+        return True
+
+    for i in range(len(combo) - 1):
+        prev_strand = combo[i]
+        curr_strand = combo[i + 1]
+
+        # prev_strand is [start, end] where end is exclusive
+        # So the last index of previous strand is end - 1
+        prev_end = prev_strand[1] - 1
+        # curr_strand is [start, end] where start is the first index
+        curr_start = curr_strand[0]
+
+        # Check if prev_end is paired to curr_start
+        if (
+            prev_end >= 0
+            and prev_end < len(connections)
+            and curr_start < len(connections)
+            and connections[prev_end] == curr_start
+        ):
+            continue
+        else:
+            # Not connected, invalid combination
+            return False
+
+    return True
+
+
+def _build_segments_from_matches(
+    matches: list[tuple[list[int], ...]],
+) -> list[RNASegment]:
+    """Build RNASegment objects from match combinations with all indices.
+
+    Args:
+        matches: List of match combinations, where each is a tuple of [start, end] pairs.
+
+    Returns:
+        List of RNASegment objects with strands containing all indices.
+    """
+    segments = []
+    for match in matches:
+        strands = []
+        for strand_match in match:
+            start, end = strand_match[0], strand_match[1]
+            # Create inclusive range: [start, start+1, ..., end]
+            # Note: end from match is exclusive (like Python slice), so we use end as inclusive
+            indices = list(range(start, end + 1))
+            strands.append(indices)
+        segments.append(RNASegment(strands=tuple(strands)))
+    return segments

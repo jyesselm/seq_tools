@@ -3,7 +3,13 @@ test structure module for seq_tools
 """
 
 import pytest
-from seq_tools.structure import SequenceStructure, Match, find, find_seq_struct
+from seq_tools.structure import (
+    SequenceStructure,
+    Match,
+    RNASegment,
+    find,
+    find_seq_struct,
+)
 
 
 class TestSequenceStructure:
@@ -59,10 +65,11 @@ class TestFind:
         r = find(struct, sub)
         assert r == [([0, 3], [6, 9])]
         assert len(r) == 1
-        # should have multiple solutions
+        # should have multiple solutions, but only those with connected strands
         sub = SequenceStructure("GG&CC", "((&))")
         r = find(struct, sub)
-        assert len(r) == 4
+        # With connectivity validation, only valid combinations are returned
+        assert len(r) == 2
 
     def test_find_real_solution(self):
         """Test that find returns the correct index for a real-world example."""
@@ -105,12 +112,15 @@ class TestFindSeqStruct:
     """Tests for the find_seq_struct function."""
 
     def test_alias(self):
-        """Test that find_seq_struct is an alias for find and works identically."""
+        """Test that find_seq_struct returns RNASegment objects."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GAAAC", "(...)")
-        r_find = find(struct, sub)
         r_find_seq_struct = find_seq_struct(struct, sub)
-        assert r_find == r_find_seq_struct
+        assert isinstance(r_find_seq_struct, list)
+        assert len(r_find_seq_struct) > 0
+        assert isinstance(r_find_seq_struct[0], RNASegment)
+        # Check that strands contain all indices
+        assert r_find_seq_struct[0].strands[0] == [2, 3, 4, 5, 6, 7]
 
     def test_no_match(self):
         """Test that find_seq_struct returns empty list when no match is found."""
@@ -126,23 +136,23 @@ class TestFindSeqStruct:
         r = find_seq_struct(struct, sub)
         assert len(r) == 2
         # Order may vary, so check that all expected matches are present
-        expected_matches = [[2, 7], [11, 16]]
-        actual_matches = [match[0] for match in r]
-        for expected in expected_matches:
-            assert expected in actual_matches
+        expected_indices = [[2, 3, 4, 5, 6, 7], [11, 12, 13, 14, 15, 16]]
+        actual_indices = [seg.strands[0] for seg in r]
+        for expected in expected_indices:
+            assert expected in actual_indices
 
     def test_overlapping_matches(self):
         """Test that overlapping matches are all found."""
         struct = SequenceStructure("AAAAAA", "......")
         sub = SequenceStructure("AAA", "...")
         r = find_seq_struct(struct, sub)
-        # Should find 4 overlapping matches: [0,3], [1,4], [2,5], [3,6]
+        # Should find 4 overlapping matches with indices [0,1,2,3], [1,2,3,4], [2,3,4,5], [3,4,5,6]
         assert len(r) == 4
         # Order may vary, so check that all expected matches are present
-        expected_matches = [[0, 3], [1, 4], [2, 5], [3, 6]]
-        actual_matches = [match[0] for match in r]
-        for expected in expected_matches:
-            assert expected in actual_matches
+        expected_indices = [[0, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]]
+        actual_indices = [seg.strands[0] for seg in r]
+        for expected in expected_indices:
+            assert expected in actual_indices
 
     def test_single_char_match(self):
         """Test matching a single character."""
@@ -152,10 +162,10 @@ class TestFindSeqStruct:
         # Should find all three A's at positions 3, 4, 5
         assert len(r) == 3
         # Order may vary, so check that all expected matches are present
-        expected_matches = [[3, 4], [4, 5], [5, 6]]
-        actual_matches = [match[0] for match in r]
-        for expected in expected_matches:
-            assert expected in actual_matches
+        expected_indices = [[3, 4], [4, 5], [5, 6]]
+        actual_indices = [seg.strands[0] for seg in r]
+        for expected in expected_indices:
+            assert expected in actual_indices
 
 
 class TestFindSeqStructWildcards:
@@ -168,13 +178,13 @@ class TestFindSeqStructWildcards:
         sub = SequenceStructure("NGG", "(((")
         r = find_seq_struct(struct, sub)
         assert len(r) == 1
-        assert r == [([0, 3],)]
+        assert r[0].strands[0] == [0, 1, 2, 3]
 
         # N should match C
         sub = SequenceStructure("CCN", ")))")
         r = find_seq_struct(struct, sub)
         assert len(r) == 1
-        assert r == [([6, 9],)]
+        assert r[0].strands[0] == [6, 7, 8, 9]
 
     def test_multiple_N(self):
         """Test multiple N wildcards in sequence."""
@@ -182,7 +192,7 @@ class TestFindSeqStructWildcards:
         sub = SequenceStructure("NNN", "(((")
         r = find_seq_struct(struct, sub)
         assert len(r) == 1
-        assert r == [([0, 3],)]
+        assert r[0].strands[0] == [0, 1, 2, 3]
 
 
 class TestFindSeqStructParameters:
@@ -195,7 +205,7 @@ class TestFindSeqStructParameters:
         # Should only find second match when starting at position 10
         r = find_seq_struct(struct, sub, start=10)
         assert len(r) == 1
-        assert r == [([11, 16],)]
+        assert r[0].strands[0] == [11, 12, 13, 14, 15, 16]
 
         # Should find both when starting at 0
         r = find_seq_struct(struct, sub, start=0)
@@ -208,7 +218,7 @@ class TestFindSeqStructParameters:
         # Should only find first match when ending at position 10
         r = find_seq_struct(struct, sub, end=10)
         assert len(r) == 1
-        assert r == [([2, 7],)]
+        assert r[0].strands[0] == [2, 3, 4, 5, 6, 7]
 
     def test_start_end_parameters(self):
         """Test using both start and end parameters together."""
@@ -219,7 +229,7 @@ class TestFindSeqStructParameters:
         # Should only find middle match
         r = find_seq_struct(struct, sub, start=5, end=18)
         assert len(r) == 1
-        assert r == [([11, 16],)]
+        assert r[0].strands[0] == [11, 12, 13, 14, 15, 16]
 
     def test_invalid_start(self):
         """Test that invalid start parameter raises ValueError."""
@@ -248,21 +258,24 @@ class TestFindSeqStructBoundaries:
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GGG", "(((")
         r = find_seq_struct(struct, sub)
-        assert r == [([0, 3],)]
+        assert len(r) == 1
+        assert r[0].strands[0] == [0, 1, 2, 3]
 
     def test_boundary_end(self):
         """Test match at the very end of sequence."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("CCC", ")))")
         r = find_seq_struct(struct, sub)
-        assert r == [([6, 9],)]
+        assert len(r) == 1
+        assert r[0].strands[0] == [6, 7, 8, 9]
 
     def test_exact_match(self):
         """Test when sub-structure exactly matches full structure."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GGGAAACCC", "(((...)))")
         r = find_seq_struct(struct, sub)
-        assert r == [([0, 9],)]
+        assert len(r) == 1
+        assert r[0].strands[0] == list(range(10))  # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
 class TestFindSeqStructPatterns:
@@ -273,14 +286,16 @@ class TestFindSeqStructPatterns:
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("AAA", "...")
         r = find_seq_struct(struct, sub)
-        assert r == [([3, 6],)]
+        assert len(r) == 1
+        assert r[0].strands[0] == [3, 4, 5, 6]
 
     def test_all_paired(self):
         """Test matching structure with all paired bases."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GGG", "(((")
         r = find_seq_struct(struct, sub)
-        assert r == [([0, 3],)]
+        assert len(r) == 1
+        assert r[0].strands[0] == [0, 1, 2, 3]
 
 
 class TestFindSeqStructMultiStrand:
@@ -299,7 +314,8 @@ class TestFindSeqStructMultiStrand:
         sub = SequenceStructure("NNN&CCC", "(((&)))")
         r = find_seq_struct(struct, sub)
         assert len(r) == 1
-        assert r == [([0, 3], [6, 9])]
+        assert r[0].strands[0] == [0, 1, 2, 3]
+        assert r[0].strands[1] == [6, 7, 8, 9]
 
     def test_complex_multi_strand(self):
         """Test complex multi-strand search with multiple possible combinations."""
@@ -308,11 +324,13 @@ class TestFindSeqStructMultiStrand:
         r = find_seq_struct(struct, sub)
         # Should find multiple combinations: first GG with any CC, etc.
         assert len(r) > 1
-        # All matches should have format ([start, end], [start, end])
-        for match in r:
-            assert len(match) == 2
-            assert len(match[0]) == 2
-            assert len(match[1]) == 2
+        # All matches should be RNASegment objects with 2 strands
+        for seg in r:
+            assert isinstance(seg, RNASegment)
+            assert len(seg.strands) == 2
+            # Each strand should be a list of indices
+            assert isinstance(seg.strands[0], list)
+            assert isinstance(seg.strands[1], list)
 
 
 class TestFindSeqStructMismatches:
@@ -349,13 +367,13 @@ class TestFindSeqStructEdgeCases:
 
 
 class TestFindSeqStructMatchFormat:
-    """Tests for find_seq_struct with the new Match format."""
+    """Tests for find with the Match format (find_seq_struct returns RNASegment)."""
 
     def test_match_format_single_strand(self):
-        """Test Match format for single-strand searches."""
+        """Test Match format for single-strand searches using find."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GAAAC", "(...)")
-        matches = find_seq_struct(struct, sub, format="match")
+        matches = find(struct, sub, format="match")
         assert len(matches) == 1
         assert isinstance(matches[0], Match)
         assert matches[0].start == 2
@@ -363,10 +381,10 @@ class TestFindSeqStructMatchFormat:
         assert matches[0].strands == ((2, 7),)
 
     def test_match_format_multiple_matches(self):
-        """Test Match format with multiple matches."""
+        """Test Match format with multiple matches using find."""
         struct = SequenceStructure("GGGAAACCCGGGAAACCC", "(((...)))(((...)))")
         sub = SequenceStructure("GAAAC", "(...)")
-        matches = find_seq_struct(struct, sub, format="match")
+        matches = find(struct, sub, format="match")
         assert len(matches) == 2
         assert all(isinstance(m, Match) for m in matches)
         # Order may vary
@@ -374,10 +392,10 @@ class TestFindSeqStructMatchFormat:
         assert starts == {2, 11}
 
     def test_match_format_multi_strand(self):
-        """Test Match format for multi-strand searches."""
+        """Test Match format for multi-strand searches using find."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GGG&CCC", "(((&)))")
-        matches = find_seq_struct(struct, sub, format="match")
+        matches = find(struct, sub, format="match")
         assert len(matches) == 1
         assert isinstance(matches[0], Match)
         # Multi-strand matches don't have .start/.end attributes
@@ -386,10 +404,10 @@ class TestFindSeqStructMatchFormat:
         assert matches[0].strands == ((0, 3), (6, 9))
 
     def test_match_format_no_matches(self):
-        """Test Match format when no matches are found."""
+        """Test Match format when no matches are found using find."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("TTTTT", ".....")
-        matches = find_seq_struct(struct, sub, format="match")
+        matches = find(struct, sub, format="match")
         assert matches == []
 
     def test_match_format_invalid(self):
@@ -397,18 +415,18 @@ class TestFindSeqStructMatchFormat:
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GAAAC", "(...)")
         with pytest.raises(ValueError, match="Invalid format"):
-            find_seq_struct(struct, sub, format="invalid")
+            find(struct, sub, format="invalid")
 
     def test_match_repr_single_strand(self):
         """Test Match string representation for single-strand."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GAAAC", "(...)")
-        matches = find_seq_struct(struct, sub, format="match")
+        matches = find(struct, sub, format="match")
         assert "Match(start=2, end=7)" in str(matches[0])
 
     def test_match_repr_multi_strand(self):
         """Test Match string representation for multi-strand."""
         struct = SequenceStructure("GGGAAACCC", "(((...)))")
         sub = SequenceStructure("GGG&CCC", "(((&)))")
-        matches = find_seq_struct(struct, sub, format="match")
+        matches = find(struct, sub, format="match")
         assert "strands" in str(matches[0])

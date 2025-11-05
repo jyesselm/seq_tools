@@ -24,7 +24,7 @@ from .sequence import (
 from .extinction_coeff import get_extinction_coeff
 
 # Structure classes and functions
-from .structure import SequenceStructure, Match, find, find_seq_struct
+from .structure import SequenceStructure, Match, RNASegment, find, find_seq_struct
 
 # DataFrame-level functions (for batch operations)
 from .dataframe import (
@@ -95,6 +95,7 @@ __all__ = [
     # Structure
     "SequenceStructure",
     "Match",
+    "RNASegment",
     "find",
     "find_seq_struct",
     # DataFrame-level functions (batch operations)
