@@ -112,6 +112,12 @@ class SequenceStructure:
         return SequenceStructure(sequence, structure)
 
 
+def find_seq_struct(
+    struct: SequenceStructure, sub: SequenceStructure, start=None, end=None
+):
+    return find(struct, sub, start, end)
+
+
 def find(struct: SequenceStructure, sub: SequenceStructure, start=None, end=None):
     """
     find the position of a substructure in a structure

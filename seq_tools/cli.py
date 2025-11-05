@@ -1,6 +1,7 @@
 """
 commandline interface for seq_tools
 """
+
 import os
 import click
 import tabulate
@@ -10,6 +11,8 @@ from seq_tools import sequence, dataframe
 from seq_tools.logger import setup_applevel_logger, get_logger
 
 pd.set_option("display.max_colwidth", None)
+
+log = get_logger("cli")
 
 
 def validate_dataframe(df) -> None:
@@ -113,16 +116,31 @@ def add(data, p5_seq, p3_seq, output):
 
 
 @cli.command(help="calculate the edit distance of a library")
+@click.option(
+    "-p", "--parallel", is_flag=True, help="calculate the edit distance in parallel"
+)
+@click.option("-w", "--workers", type=int, help="number of workers to use", default=1)
+@click.option(
+    "--use-threads",
+    is_flag=True,
+    help="use threads instead of processes",
+    default=False,
+)
 @click.argument("data", type=click.Path(exists=True))
-def edit_distance(data):
+def edit_distance(data, parallel, workers, use_threads):
     """
     calculates the edit distance of a library
     :param data: can be a sequence or a file
     """
     setup_applevel_logger()
     df = pd.read_csv(data)
-    score = dataframe.calc_edit_distance(df)
-    log = get_logger("edit_distance")
+    if parallel:
+        log.info(f"calculating edit distance in parallel with {workers} workers")
+        if use_threads:
+            log.info("using threads instead of processes")
+        score = dataframe.calc_edit_distance_parallel(df, workers, use_threads)
+    else:
+        score = dataframe.calc_edit_distance(df)
     log.info(f"edit distance: {score}")
 
 
@@ -379,6 +397,157 @@ def transcribe(data, output):
     df = get_input_dataframe(data)
     df = df[["name", "sequence"]]
     df = dataframe.transcribe(df)
+    handle_output(df, output)
+
+
+@cli.command(
+    help="generate mutated sequences from a template with optional constant 5' and 3' ends"
+)
+@click.argument("template")
+@click.option(
+    "-n",
+    "--num-sequences",
+    type=int,
+    default=10,
+    help="number of mutated sequences to generate",
+)
+@click.option(
+    "-m",
+    "--num-mutations",
+    type=int,
+    required=True,
+    help="number of mutations per sequence",
+)
+@click.option(
+    "-p5",
+    "--p5-seq",
+    default=None,
+    help="constant 5' sequence (mutations only in middle region)",
+)
+@click.option(
+    "-p3",
+    "--p3-seq",
+    default=None,
+    help="constant 3' sequence (mutations only in middle region)",
+)
+@click.option(
+    "-nt",
+    "--ntype",
+    default="DNA",
+    type=click.Choice(["DNA", "RNA"]),
+    help="type of nucleic acid",
+)
+@click.option("-o", "--output", help="output file", default="output.csv")
+def mutate(template, num_sequences, num_mutations, p5_seq, p3_seq, ntype, output):
+    """
+    generates mutated sequences from a template sequence with optional constant 5' and 3' ends
+
+    :param template: template sequence to mutate (can be a sequence string or file with one sequence)
+    :param num_sequences: number of mutated sequences to generate
+    :param num_mutations: number of mutations to introduce per sequence
+    :param p5_seq: optional constant 5' sequence (if provided, mutations only in middle region)
+    :param p3_seq: optional constant 3' sequence (if provided, mutations only in middle region)
+    :param ntype: type of nucleic acid (DNA or RNA)
+    :param output: output file
+    """
+    setup_applevel_logger()
+    log = get_logger("mutate")
+
+    # Get template sequence - can be a file or a sequence string
+    if os.path.isfile(template):
+        log.info(f"reading template from file {template}")
+        df_temp = pd.read_csv(template)
+        validate_dataframe(df_temp)
+        if len(df_temp) != 1:
+            raise ValueError(
+                f"Template file must contain exactly one sequence, found {len(df_temp)}"
+            )
+        template_seq = df_temp.iloc[0]["sequence"]
+    else:
+        log.info(f"using template sequence: {template}")
+        template_seq = template
+
+    log.info(
+        f"generating {num_sequences} sequences with {num_mutations} mutations each"
+    )
+    if p5_seq:
+        log.info(f"using constant 5' sequence: {p5_seq}")
+    if p3_seq:
+        log.info(f"using constant 3' sequence: {p3_seq}")
+
+    df = dataframe.generate_mutated_sequences(
+        template=template_seq,
+        num_mutations=num_mutations,
+        num_sequences=num_sequences,
+        p5_seq=p5_seq,
+        p3_seq=p3_seq,
+        ntype=ntype,
+    )
+    handle_output(df, output)
+
+
+@cli.command(help="generate random sequences with optional constant 5' and 3' ends")
+@click.option(
+    "-l",
+    "--length",
+    type=int,
+    required=True,
+    help="total length of sequences (including constant 5' and 3' if provided)",
+)
+@click.option(
+    "-n",
+    "--num-sequences",
+    type=int,
+    default=10,
+    help="number of random sequences to generate",
+)
+@click.option(
+    "-p5",
+    "--p5-seq",
+    default=None,
+    help="constant 5' sequence",
+)
+@click.option(
+    "-p3",
+    "--p3-seq",
+    default=None,
+    help="constant 3' sequence",
+)
+@click.option(
+    "-nt",
+    "--ntype",
+    default="DNA",
+    type=click.Choice(["DNA", "RNA"]),
+    help="type of nucleic acid",
+)
+@click.option("-o", "--output", help="output file", default="output.csv")
+def random(length, num_sequences, p5_seq, p3_seq, ntype, output):
+    """
+    generates random sequences with optional constant 5' and 3' ends
+
+    :param length: total length of sequences (including constant 5' and 3' if provided)
+    :param num_sequences: number of random sequences to generate
+    :param p5_seq: optional constant 5' sequence
+    :param p3_seq: optional constant 3' sequence
+    :param ntype: type of nucleic acid (DNA or RNA)
+    :param output: output file
+    """
+    setup_applevel_logger()
+    log = get_logger("random")
+
+    log.info(f"generating {num_sequences} random sequences of length {length}")
+    if p5_seq:
+        log.info(f"using constant 5' sequence: {p5_seq}")
+    if p3_seq:
+        log.info(f"using constant 3' sequence: {p3_seq}")
+
+    df = dataframe.generate_random_sequences(
+        length=length,
+        num_sequences=num_sequences,
+        p5_seq=p5_seq,
+        p3_seq=p3_seq,
+        ntype=ntype,
+    )
     handle_output(df, output)
 
 

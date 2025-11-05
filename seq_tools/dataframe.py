@@ -1,14 +1,65 @@
 """
 module for working with dataframes that contain nucleotide sequences
 """
+
+import os
 import pandas as pd
 import numpy as np
+from typing import List, Optional
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import random
+
 import editdistance
 import vienna
 
 from seq_tools import sequence, extinction_coeff
 from seq_tools.structure import SequenceStructure
 from seq_tools.structure import find as find_seq_struct
+
+
+def split(df: pd.DataFrame, n_chunks: int) -> List[pd.DataFrame]:
+    """
+    Splits a DataFrame into multiple chunks.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to be split.
+        n_chunks (int): The number of chunks to split the DataFrame into.
+
+    Returns:
+        List[pd.DataFrame]: A list of DataFrames, each representing a chunk of the original DataFrame.
+    """
+    chunk_size = len(df) // n_chunks
+    chunks = [df.iloc[i * chunk_size : (i + 1) * chunk_size] for i in range(n_chunks)]
+
+    # Handle the last chunk in case the division isn't perfect
+    if len(df) % n_chunks != 0:
+        chunks.append(df.iloc[n_chunks * chunk_size :])
+
+    return chunks
+
+
+def run_in_parallel(df: pd.DataFrame, func, threads: int) -> pd.DataFrame:
+    """
+    Runs a function in parallel on chunks of a DataFrame using multiple threads.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to process.
+        func (callable): The function to apply to each chunk of the DataFrame.
+        threads (int): The number of threads to use for parallel processing.
+
+    Returns:
+        pd.DataFrame: The combined results of applying the function to each chunk.
+    """
+    df_chunks = split(df, threads)
+    results = []
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        futures = {executor.submit(func, chunk): chunk for chunk in df_chunks}
+        for future in as_completed(futures):
+            result = future.result()
+            results.append(result)
+    # Combine the results into a single DataFrame
+    df_results = pd.concat(results)
+    return df_results
 
 
 def add(df: pd.DataFrame, p5_seq: str, p3_seq: str) -> pd.DataFrame:
@@ -45,7 +96,76 @@ def calc_edit_distance(df: pd.DataFrame) -> float:
                 scores[i] = diff
             if scores[j] > diff:
                 scores[j] = diff
-    avg = np.mean(scores)
+    avg = float(np.mean(scores))
+    return avg
+
+
+def _compute_pairwise_edit_distances(chunk):
+    """
+    Helper function to compute pairwise edit distances for a chunk of sequence pairs.
+    Used for parallel processing.
+
+    :param chunk: list of tuples (i, j, seq1, seq2)
+    :return: dictionary mapping indices to their minimum edit distances
+    """
+    results = {}
+    for i, j, seq1, seq2 in chunk:
+        diff = editdistance.eval(seq1, seq2)
+        if i not in results:
+            results[i] = diff
+        else:
+            results[i] = min(results[i], diff)
+        if j not in results:
+            results[j] = diff
+        else:
+            results[j] = min(results[j], diff)
+    return results
+
+
+def calc_edit_distance_parallel(
+    df: pd.DataFrame, n_workers: Optional[int] = None, use_threads: bool = False
+) -> float:
+    """
+    calculates the edit distance between each sequence in the dataframe using parallel processing
+
+    :param df: dataframe
+    :param n_workers: number of workers to use. If None, uses the number of CPU cores
+    :param use_threads: if True, use threads instead of processes
+    :return: the edit distance
+    """
+    if len(df) == 1:
+        return 0
+
+    sequences = list(df["sequence"])
+    n = len(sequences)
+
+    # Generate all pairs to compare
+    pairs = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            pairs.append((i, j, sequences[i], sequences[j]))
+
+    # Split pairs into chunks for parallel processing
+    if n_workers is None:
+        n_workers = os.cpu_count() or 1
+
+    chunk_size = max(1, len(pairs) // n_workers)
+    chunks = [pairs[i : i + chunk_size] for i in range(0, len(pairs), chunk_size)]
+
+    # Process chunks in parallel
+    scores = [100 for _ in range(n)]
+    executor_class = ThreadPoolExecutor if use_threads else ProcessPoolExecutor
+    with executor_class(max_workers=n_workers) as executor:
+        futures = [
+            executor.submit(_compute_pairwise_edit_distances, chunk) for chunk in chunks
+        ]
+        for future in as_completed(futures):
+            chunk_results = future.result()
+            # Update scores with minimum values
+            for idx, dist in chunk_results.items():
+                scores[idx] = min(scores[idx], dist)
+
+    avg = float(np.mean(scores))
     return avg
 
 
@@ -318,4 +438,154 @@ def transcribe(df: pd.DataFrame, ignore_missing_t7=False) -> pd.DataFrame:
         df = trim(df, 20, 0)
     df = to_rna(df)
     df = fold(df)
+    return df
+
+
+def generate_mutated_sequences(
+    template: str,
+    num_mutations: int,
+    num_sequences: int,
+    p5_seq: Optional[str] = None,
+    p3_seq: Optional[str] = None,
+    ntype: str = "DNA",
+) -> pd.DataFrame:
+    """
+    generates mutated sequences from a template sequence with optional constant 5' and 3' ends
+
+    :param template: template sequence to mutate
+    :param num_mutations: number of mutations to introduce per sequence
+    :param num_sequences: number of mutated sequences to generate
+    :param p5_seq: optional constant 5' sequence (if provided, mutations only in middle region)
+    :param p3_seq: optional constant 3' sequence (if provided, mutations only in middle region)
+    :param ntype: nucleotide type (DNA or RNA)
+    :return: dataframe with mutated sequences
+    """
+    nucleotides = {"DNA": ["A", "T", "G", "C"], "RNA": ["A", "U", "G", "C"]}
+    nucs = nucleotides.get(ntype, nucleotides["DNA"])
+
+    # Determine the variable region to mutate
+    if p5_seq and p3_seq:
+        p5_len = len(p5_seq)
+        p3_len = len(p3_seq)
+        if len(template) < p5_len + p3_len:
+            raise ValueError(
+                f"Template sequence ({len(template)} bp) is shorter than "
+                f"combined 5' and 3' sequences ({p5_len + p3_len} bp)"
+            )
+        variable_region = template[p5_len:-p3_len] if p3_len > 0 else template[p5_len:]
+    elif p5_seq:
+        p5_len = len(p5_seq)
+        if len(template) < p5_len:
+            raise ValueError(
+                f"Template sequence ({len(template)} bp) is shorter than "
+                f"5' sequence ({p5_len} bp)"
+            )
+        variable_region = template[p5_len:]
+    elif p3_seq:
+        p3_len = len(p3_seq)
+        if len(template) < p3_len:
+            raise ValueError(
+                f"Template sequence ({len(template)} bp) is shorter than "
+                f"3' sequence ({p3_len} bp)"
+            )
+        variable_region = template[:-p3_len] if p3_len > 0 else template
+    else:
+        variable_region = template
+
+    if len(variable_region) < num_mutations:
+        raise ValueError(
+            f"Variable region ({len(variable_region)} bp) is shorter than "
+            f"number of mutations ({num_mutations})"
+        )
+
+    sequences = []
+    names = []
+
+    for i in range(num_sequences):
+        # Create a mutable copy of the variable region
+        mutated_var = list(variable_region)
+
+        # Randomly select positions to mutate (without replacement)
+        positions_to_mutate = random.sample(
+            range(len(mutated_var)), min(num_mutations, len(mutated_var))
+        )
+
+        # Mutate each selected position
+        for pos in positions_to_mutate:
+            original_nuc = mutated_var[pos]
+            # Choose a different nucleotide
+            available_nucs = [n for n in nucs if n != original_nuc]
+            mutated_var[pos] = random.choice(available_nucs)
+
+        # Reconstruct the full sequence
+        mutated_var_str = "".join(mutated_var)
+
+        if p5_seq and p3_seq:
+            full_sequence = p5_seq + mutated_var_str + p3_seq
+        elif p5_seq:
+            full_sequence = p5_seq + mutated_var_str
+        elif p3_seq:
+            full_sequence = mutated_var_str + p3_seq
+        else:
+            full_sequence = mutated_var_str
+
+        sequences.append(full_sequence)
+        names.append(f"mutated_seq_{i+1}")
+
+    df = pd.DataFrame({"name": names, "sequence": sequences})
+    return df
+
+
+def generate_random_sequences(
+    length: int,
+    num_sequences: int,
+    p5_seq: Optional[str] = None,
+    p3_seq: Optional[str] = None,
+    ntype: str = "DNA",
+) -> pd.DataFrame:
+    """
+    generates random sequences with optional constant 5' and 3' ends
+
+    :param length: total length of sequences (including constant 5' and 3' if provided)
+    :param num_sequences: number of random sequences to generate
+    :param p5_seq: optional constant 5' sequence
+    :param p3_seq: optional constant 3' sequence
+    :param ntype: nucleotide type (DNA or RNA)
+    :return: dataframe with random sequences
+    """
+    nucleotides = {"DNA": ["A", "T", "G", "C"], "RNA": ["A", "U", "G", "C"]}
+    nucs = nucleotides.get(ntype, nucleotides["DNA"])
+
+    # Calculate the length of the random middle region
+    p5_len = len(p5_seq) if p5_seq else 0
+    p3_len = len(p3_seq) if p3_seq else 0
+    random_length = length - p5_len - p3_len
+
+    if random_length <= 0:
+        raise ValueError(
+            f"Sequence length ({length}) must be greater than the sum of "
+            f"5' ({p5_len}) and 3' ({p3_len}) constant sequences"
+        )
+
+    sequences = []
+    names = []
+
+    for i in range(num_sequences):
+        # Generate random middle region
+        random_seq = "".join(random.choice(nucs) for _ in range(random_length))
+
+        # Reconstruct the full sequence
+        if p5_seq and p3_seq:
+            full_sequence = p5_seq + random_seq + p3_seq
+        elif p5_seq:
+            full_sequence = p5_seq + random_seq
+        elif p3_seq:
+            full_sequence = random_seq + p3_seq
+        else:
+            full_sequence = random_seq
+
+        sequences.append(full_sequence)
+        names.append(f"random_seq_{i+1}")
+
+    df = pd.DataFrame({"name": names, "sequence": sequences})
     return df
