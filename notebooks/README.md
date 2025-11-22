@@ -19,10 +19,10 @@ This directory contains Jupyter notebooks demonstrating how to use the `seq_tool
 
 ### 03_structure_analysis.ipynb
 - RNA folding with ViennaRNA
-- Working with SequenceStructure objects
-- Structure-based pattern matching
+- Working with structure columns in DataFrames
+- Searching for structural patterns using string matching
 - Structure-aware extinction coefficients
-- Connectivity lists and pairing analysis
+- Analyzing base pairing by parsing dot-bracket notation
 
 ### 04_dataframe_operations.ipynb
 - Batch processing with pandas DataFrames
@@ -39,7 +39,7 @@ This directory contains Jupyter notebooks demonstrating how to use the `seq_tool
 - Parallel processing
 - Generating mutated sequence libraries
 - Generating random sequences
-- Structure-based pattern matching in DataFrames
+- Pattern matching in DataFrames (sequence and structure)
 - Complete analysis workflows
 - Data validation
 
@@ -71,4 +71,3 @@ This directory contains Jupyter notebooks demonstrating how to use the `seq_tool
 - Jupyter notebook
 
 All dependencies are installed automatically when you install `rna_seq_tools`.
-

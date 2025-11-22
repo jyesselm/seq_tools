@@ -22,4 +22,3 @@ DNA_MW = {"A": 331.2, "C": 307.2, "G": 347.2, "T": 322.2}
 # Reverse complement mappings
 RC_DNA = {"A": "T", "T": "A", "G": "C", "C": "G"}
 RC_RNA = {"A": "U", "U": "A", "G": "C", "C": "G"}
-

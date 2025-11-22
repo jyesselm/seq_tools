@@ -4,7 +4,7 @@
 [![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/jyesselm/seq_tools/actions/workflows/tests.yml/badge.svg)](https://github.com/jyesselm/seq_tools/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Non--Commercial-red.svg)](LICENSE)
 
 A Python package for manipulating and analyzing nucleic acid sequences (DNA and RNA) in pandas DataFrames.
 
@@ -207,6 +207,18 @@ See the [notebooks](notebooks/) directory for detailed examples.
 - click
 - tabulate
 
+## Tutorial Notebooks
+
+Interactive Jupyter notebooks are available in the [`notebooks/`](notebooks/) directory:
+
+- **01_introduction.ipynb**: Package overview and quick start
+- **02_sequence_operations.ipynb**: Working with individual sequences
+- **03_structure_analysis.ipynb**: RNA folding and structure analysis
+- **04_dataframe_operations.ipynb**: Batch processing with DataFrames
+- **05_advanced_features.ipynb**: Advanced features and workflows
+
+See the [notebooks README](notebooks/README.md) for more details.
+
 ## Development
 
 ```bash
@@ -227,7 +239,9 @@ pytest test/ -v
 
 ## License
 
-See [LICENSE](LICENSE) file for details.
+This project is licensed under a **Non-Commercial License**. Commercial use is prohibited. See [LICENSE](LICENSE) file for details.
+
+For commercial licensing inquiries, please contact jyesselm@unl.edu.
 
 ## Author
 

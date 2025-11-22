@@ -54,6 +54,7 @@ def get_molecular_weight(
     >>> get_molecular_weight("AUCG", "RNA", double_stranded=True)
     2726.8
     """
+
     def compute_mw(seq: str, ntype: str) -> float:
         molecular_weight = 0.0
         for nuc in seq:
