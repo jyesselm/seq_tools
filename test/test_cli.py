@@ -29,7 +29,7 @@ def test_edit_distance():
     assert result.exit_code == 0
     lines = result.output.splitlines()
     assert (
-        lines[0] == "SEQ_TOOLS.cli - INFO - edit distance: 17.666666666666668"
+        lines[0] == "seq-tools.cli - INFO - edit distance: 17.666666666666668"
     )
 
 

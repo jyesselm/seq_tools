@@ -6,6 +6,7 @@ import os
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 import random
+from typing import Optional
 
 import editdistance
 import numpy as np
@@ -13,10 +14,9 @@ import pandas as pd
 import vienna
 
 from seq_tools import sequence, extinction_coeff
-from seq_tools.structure import SequenceStructure
-from seq_tools.structure import find as find_seq_struct
 from seq_tools.config import T7_PROMOTER, DEFAULT_DNA_NTS, DEFAULT_RNA_NTS
 from seq_tools.validation import validate_dataframe, ensure_name_column
+from seq_tools.utils import get_resources_path
 
 
 def split(df: pd.DataFrame, n_chunks: int) -> list[pd.DataFrame]:
@@ -139,7 +139,7 @@ def _compute_pairwise_edit_distances(
 
 
 def calc_edit_distance_parallel(
-    df: pd.DataFrame, n_workers: int | None = None, use_threads: bool = False
+    df: pd.DataFrame, n_workers: Optional[int] = None, use_threads: bool = False
 ) -> float:
     """Calculate the average minimum edit distance using parallel processing.
 
@@ -414,23 +414,6 @@ def has_t7_promoter(df: pd.DataFrame) -> bool:
     return True
 
 
-def has_seq_struct(df: pd.DataFrame, seq_struct: SequenceStructure) -> bool:
-    """Check if all sequences in the dataframe contain the given sequence structure.
-
-    Args:
-        df: DataFrame containing 'sequence' and 'structure' columns.
-        seq_struct: SequenceStructure object to search for.
-
-    Returns:
-        True if all sequences contain the structure, False otherwise.
-    """
-    for _, row in df.iterrows():
-        row_seq_struct = SequenceStructure(row["sequence"], row["structure"])
-        if find_seq_struct(row_seq_struct, seq_struct) == 0:
-            return False
-    return True
-
-
 def to_dna(df: pd.DataFrame) -> pd.DataFrame:
     """Convert each sequence in dataframe to DNA.
 
@@ -510,30 +493,85 @@ def to_rna(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def trim(df: pd.DataFrame, p5_length: int, p3_length: int) -> pd.DataFrame:
-    """Trim sequences from the 5' and 3' ends.
-
-    If a structure column exists, it will also be trimmed to match.
+def trim(
+    df: pd.DataFrame, start: int, end: int, extra_columns: list[str] = []
+) -> pd.DataFrame:
+    """
+    Trims the 'sequence', 'structure', and 'data' columns of the DataFrame to the
+    given start and end indices.
 
     Args:
-        df: DataFrame containing sequences and optionally structures.
-        p5_length: Number of bases to trim from the 5' end.
-        p3_length: Number of bases to trim from the 3' end.
+        df (pd.DataFrame): A DataFrame with 'sequence', 'structure', and 'data'
+                           columns, where 'data' contains lists of numbers.
+        start (int): The start index for trimming.
+        end (int): The end index for trimming.
 
     Returns:
-        DataFrame with trimmed sequences and structures.
+        pd.DataFrame: A trimmed DataFrame with the 'sequence', 'structure', and
+                      'data' columns adjusted to the specified indices.
     """
+
+    def trim_column(column: pd.Series, start: int, end: int) -> pd.Series:
+        if start == 0 and end == 0:
+            return column
+        if end == 0:
+            return column.str[start:]
+        elif start == 0:
+            return column.str[:-end]
+        else:
+            return column.str[start:-end]
+
     df = df.copy()
-    # trim `sequence` column and `structure` column
-    p3_length = -p3_length
-    if p5_length == 0:
-        p5_length = None
-    if p3_length == 0:
-        p3_length = None
-    df["sequence"] = df["sequence"].str.slice(p5_length, p3_length)
+    trim_columns = ["sequence"]
     if "structure" in df.columns:
-        df["structure"] = df["structure"].str.slice(p5_length, p3_length)
+        trim_columns.append("structure")
+    trim_columns.extend(extra_columns)
+    for col in trim_columns:
+        if col in df.columns:
+            if isinstance(df.iloc[0][col], list) or isinstance(
+                df.iloc[0][col], np.ndarray
+            ):
+                df[col] = df[col].apply(
+                    lambda x: x[start:-end] if end != 0 else x[start:]
+                )
+            else:
+                df[col] = trim_column(df[col], start, end)
+
     return df
+
+
+def trim_p5_and_p3(df: pd.DataFrame, extra_columns: list[str] = []) -> pd.DataFrame:
+    """
+    Trims the 5' and 3' ends of the data in the DataFrame.
+
+    This function reads a CSV file containing p5 sequences, converts these
+    sequences to RNA, checks for a common p5 sequence in the given DataFrame,
+    and trims the DataFrame based on the length of this common p5 sequence and
+    a fixed 3' end length.
+
+    Args:
+        df (pd.DataFrame): A DataFrame with a 'data' column containing
+                           sequences as strings.
+
+    Returns:
+        pd.DataFrame: A trimmed DataFrame with the 5' and 3' ends trimmed.
+
+    Raises:
+        ValueError: If no common p5 sequence is found or the sequence is not
+                    registered in the CSV file.
+    """
+    df_p5 = pd.read_csv(get_resources_path() / "p5_sequences.csv")
+    df_p3 = pd.read_csv(get_resources_path() / "p3_sequences.csv")
+    common_p5_seq = ""
+    for p5_seq in df_p5["sequence"]:
+        if has_5p_sequence(df, p5_seq):
+            common_p5_seq = p5_seq
+    for p3_seq in df_p3["sequence"]:
+        if has_3p_sequence(df, p3_seq):
+            common_p3_seq = p3_seq
+    if len(common_p5_seq) == 0 or len(common_p3_seq) == 0:
+        raise ValueError("No common p5 or p3 sequence found")
+    return trim(df, len(common_p5_seq), len(common_p3_seq), extra_columns)
 
 
 def transcribe(df: pd.DataFrame, ignore_missing_t7: bool = False) -> pd.DataFrame:
@@ -565,8 +603,8 @@ def generate_mutated_sequences(
     template: str,
     num_mutations: int,
     num_sequences: int,
-    p5_seq: str | None = None,
-    p3_seq: str | None = None,
+    p5_seq: Optional[str] = None,
+    p3_seq: Optional[str] = None,
     ntype: str = "DNA",
 ) -> pd.DataFrame:
     """Generate mutated sequences from a template with optional constant 5' and 3' ends.
@@ -667,8 +705,8 @@ def generate_mutated_sequences(
 def generate_random_sequences(
     length: int,
     num_sequences: int,
-    p5_seq: str | None = None,
-    p3_seq: str | None = None,
+    p5_seq: Optional[str] = None,
+    p3_seq: Optional[str] = None,
     ntype: str = "DNA",
 ) -> pd.DataFrame:
     """Generate random sequences with optional constant 5' and 3' ends.

@@ -10,21 +10,8 @@ __author__ = "Joe Yesselman"
 __email__ = "jyesselm@unl.edu"
 __version__ = "0.7.2"
 
-# Core sequence-level functions (for single sequences)
-from .sequence import (
-    to_dna,
-    to_rna,
-    to_dna_template,
-    get_reverse_complement,
-    get_molecular_weight,
-    get_max_stretch,
-)
-
 # Extinction coefficient functions
 from .extinction_coeff import get_extinction_coeff
-
-# Structure classes and functions
-from .structure import SequenceStructure, Match, RNASegment, find, find_seq_struct
 
 # DataFrame-level functions (for batch operations)
 from .dataframe import (
@@ -38,6 +25,7 @@ from .dataframe import (
     get_extinction_coeff as get_extinction_coeff_df,
     get_molecular_weight as get_molecular_weight_df,
     get_reverse_complement as get_reverse_complement_df,
+    get_default_names,
     get_length,
     calc_edit_distance,
     calc_edit_distance_parallel,
@@ -47,7 +35,6 @@ from .dataframe import (
     has_5p_sequence,
     has_3p_sequence,
     has_sequence,
-    has_seq_struct,
     to_dna as to_dna_df,
     to_rna as to_rna_df,
     to_dna_template as to_dna_template_df,
@@ -58,6 +45,7 @@ from .utils import (
     sequence_to_dataframe,
     sequences_to_dataframe,
     dataframe_to_sequences,
+    get_resources_path,
 )
 
 # Validation functions
@@ -84,20 +72,8 @@ __all__ = [
     "__version__",
     "__author__",
     "__email__",
-    # Sequence-level functions (single sequences)
-    "to_dna",
-    "to_rna",
-    "to_dna_template",
-    "get_reverse_complement",
-    "get_molecular_weight",
-    "get_max_stretch",
+    # Extinction coefficient (single sequence)
     "get_extinction_coeff",
-    # Structure
-    "SequenceStructure",
-    "Match",
-    "RNASegment",
-    "find",
-    "find_seq_struct",
     # DataFrame-level functions (batch operations)
     "add",
     "fold",
@@ -118,7 +94,6 @@ __all__ = [
     "has_5p_sequence",
     "has_3p_sequence",
     "has_sequence",
-    "has_seq_struct",
     "to_dna_df",
     "to_rna_df",
     "to_dna_template_df",
@@ -126,6 +101,7 @@ __all__ = [
     "sequence_to_dataframe",
     "sequences_to_dataframe",
     "dataframe_to_sequences",
+    "get_resources_path",
     # Validation functions
     "validate_sequence",
     "validate_dataframe",

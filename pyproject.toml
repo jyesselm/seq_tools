@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rna_seq_tools"
+version = "0.7.2"
+description = "simple functions for manipulating sequences and secondary structures in pandas dataframe format"
+readme = "README.md"
+requires-python = ">=3.7"
+authors = [
+    {name = "Joe Yesselman", email = "jyesselm@unl.edu"}
+]
+keywords = ["seq_tools", "bioinformatics", "sequences", "RNA", "DNA"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "wheel>=0.22",
+    "black",
+    "click",
+    "editdistance",
+    "tabulate",
+    "numpy",
+    "pandas",
+    "pytest",
+    "vienna",
+]
+
+[project.scripts]
+seq-tools = "seq_tools.cli:cli"
+
+[tool.setuptools]
+packages = ["seq_tools"]
+
+[tool.setuptools.package-data]
+seq_tools = [
+    "resources/*.csv",
+    "resources/**/*.csv",
+]
+
+[tool.wheel]
+universal = true
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
