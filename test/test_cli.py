@@ -1,6 +1,7 @@
 """
 module to test the cli.py module
 """
+
 import os
 import pandas as pd
 from click.testing import CliRunner
@@ -28,9 +29,7 @@ def test_edit_distance():
     result = runner.invoke(cli.edit_distance, f"{resource_path}/test.csv")
     assert result.exit_code == 0
     lines = result.output.splitlines()
-    assert (
-        lines[0] == "seq-tools.cli - INFO - edit distance: 17.666666666666668"
-    )
+    assert lines[0] == "seq-tools.cli - INFO - edit distance: 17.666666666666668"
 
 
 def test_extinction_coeff():
