@@ -64,7 +64,7 @@ This directory contains Jupyter notebooks demonstrating how to use the `seq_tool
 
 ## Requirements
 
-- Python 3.7+
+- Python 3.9+
 - seq_tools package
 - pandas
 - vienna (for RNA folding)

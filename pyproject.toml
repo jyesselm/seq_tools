@@ -7,7 +7,7 @@ name = "rna_seq_tools"
 version = "0.7.2"
 description = "simple functions for manipulating sequences and secondary structures in pandas dataframe format"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 authors = [
     {name = "Joe Yesselman", email = "jyesselm@unl.edu"}
 ]
@@ -16,8 +16,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

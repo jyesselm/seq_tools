@@ -1,7 +1,7 @@
 # seq_tools
 
 [![PyPI version](https://badge.fury.io/py/rna_seq_tools.svg)](https://badge.fury.io/py/rna_seq_tools)
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/jyesselm/seq_tools/actions/workflows/tests.yml/badge.svg)](https://github.com/jyesselm/seq_tools/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/license-Non--Commercial-red.svg)](LICENSE)
@@ -199,7 +199,7 @@ See the [notebooks](notebooks/) directory for detailed examples.
 
 ## Requirements
 
-- Python 3.7+
+- Python 3.9+
 - pandas
 - numpy
 - ViennaRNA (for structure prediction)
