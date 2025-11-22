@@ -1,108 +1,238 @@
 # seq_tools
 
-[![PYPI package](https://badge.fury.io/py/rna_seq_tools.png)](http://badge.fury.io/py/rna_seq_tools)
-[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
-[![formatting: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI version](https://badge.fury.io/py/rna_seq_tools.svg)](https://badge.fury.io/py/rna_seq_tools)
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://github.com/jyesselm/seq_tools/actions/workflows/tests.yml/badge.svg)](https://github.com/jyesselm/seq_tools/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-a short python tool for working with sequences in dataframes
+A Python package for manipulating and analyzing nucleic acid sequences (DNA and RNA) in pandas DataFrames.
 
-## how to install
+## Features
 
-```shell
+- **Batch operations**: Work with sequences in pandas DataFrames for efficient processing
+- **Sequence manipulation**: Convert between DNA/RNA, reverse complement, add sequences
+- **Structure prediction**: Fold RNA sequences using ViennaRNA
+- **Analysis tools**: Calculate molecular weights, extinction coefficients, edit distances
+- **CLI interface**: Command-line tools for quick sequence operations
+- **Python API**: Full programmatic access to all functionality
+
+## Installation
+
+```bash
 pip install rna_seq_tools
 ```
 
-## how to use
+## Quick Start
 
-`seq_tools` is a python package that contains a few functions for working with sequences in
-dataframes. If there is a single sequence results are printed. If input is a csv then a new csv is
-created with the results. Default output is "output.csv" but can be changed with the `-o` flag.
+### Command Line Interface
 
-```shell
-$ seq_tools --help
-Usage: seq_tools [OPTIONS] COMMAND [ARGS]...
+```bash
+# Get help
+seq-tools --help
 
-  a set scripts to manipulate sequences in csv files
+# Convert RNA to DNA
+seq-tools to-dna "AUCG"
 
-Options:
-  --help  Show this message and exit.
+# Fold RNA sequence
+seq-tools fold "GGGGUUUUCCCC"
 
-Commands:
-  add              add a sequence to 5' and/or 3'
-  ec               calculate the extinction coefficient for each sequence
-  edit-distance    calculate the edit distance of a library
-  fold             fold rna sequences
-  mw               calculate the molecular weight for each sequence
-  rc               calculate reverse complement for each sequence
-  to-dna           convert rna sequence(s) to dna
-  to-dna-template  convert rna sequence(s) to dna template, includes T7...
-  to-fasta         generate fasta file from csv
-  to-opool         generate oligo pool file from csv
-  to-rna           convert rna sequence(s) to dna
-  transcribe       convert dna sequence(s) to rna
-  trim             trim 5'/3' ends of sequences
-
+# Calculate molecular weight
+seq-tools mw "ATCG"
 ```
 
-### add
-Adds a sequence to the 5' and/or 3' end of a sequence. 
-```shell
-$ seq_tools add -p5 "AAAA" "GGGGUUUUCCCC"
-SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
-SEQ_TOOLS.handle_output - INFO - output->
-name                     seq
-sequence    AAAAGGGGUUUUCCCC
-Name: 0, dtype: object
-```
-
-### ec 
-Calculate the extinction coefficient for each sequence. 
-```shell
-$ seq-tools ec "GGGGUUUUCCCC"
-SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
-SEQ_TOOLS.handle_ntype - INFO - determining nucleic acid type: RNA
-SEQ_TOOLS.handle_output - INFO - output->
-name                         seq
-sequence            GGGGUUUUCCCC
-extinction_coeff          109500
-Name: 0, dtype: object
-```
-
-### edit-distance
-Calculate the edit distance of a library. On average how different each sequence 
-is from the rest of the library. 
-```shell
-seq-tools edit-distance test/resources/test.csv
-SEQ_TOOLS.edit_distance - INFO - edit distance: 17.666666666666668
-```
-
-### fold
-Fold rna sequences. 
-```shell
-$ seq-tools fold "GGGGUUUUCCCC"
-SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
-SEQ_TOOLS.handle_output - INFO - output->
-name                   seq
-sequence      GGGGUUUUCCCC
-structure     ((((....))))
-mfe                   -5.9
-ens_defect            0.38
-Name: 0, dtype: object
-```
-
-### to-dna
-Convert all sequences to DNA i.e. replace T with U. 
-```shell
-$ seq_tools to-dna "GGGGUUUUCCCC"
-SEQ_TOOLS.get_input_dataframe - INFO - reading sequence GGGGUUUUCCCC
-SEQ_TOOLS.to_dna - INFO - converted sequence: GGGGTTTTCCCC
-```
-
-### other non commandline
-
-#### structure representation
+### Python API
 
 ```python
-from seq_tools import SequenceStructure
-struct = SequenceStructure("GGGGUUUUCCCC", "((((....))))")
+import pandas as pd
+from seq_tools import sequences_to_dataframe, fold, get_molecular_weight_df, to_rna_df
+
+# Create a DataFrame from sequences
+sequences = ["ATCG", "GCTA", "AAAA"]
+df = sequences_to_dataframe(sequences)
+
+# Convert to RNA
+df = to_rna_df(df)
+
+# Fold RNA sequences
+df = fold(df)
+
+# Calculate molecular weights
+df = get_molecular_weight_df(df, "RNA", double_stranded=False)
+
+print(df)
 ```
+
+### Single Sequence Functions
+
+For single sequence operations, import from the `sequence` module:
+
+```python
+from seq_tools.sequence import to_dna, to_rna, get_reverse_complement, get_molecular_weight
+
+# Convert sequences
+rna_seq = to_rna("ATCG")  # Returns "AUCG"
+dna_seq = to_dna("AUCG")  # Returns "ATCG"
+
+# Reverse complement
+rc = get_reverse_complement("ATCG", "DNA")  # Returns "CGAT"
+
+# Molecular weight
+mw = get_molecular_weight("ATCG", "DNA")  # Returns 1307.80
+```
+
+## CLI Commands
+
+### `add`
+Add a sequence to the 5' and/or 3' end of sequences.
+
+```bash
+seq-tools add -p5 "AAAA" "GGGGUUUUCCCC"
+seq-tools add -p5 "AAAA" -p3 "CCCC" input.csv
+```
+
+### `ec`
+Calculate the extinction coefficient for each sequence.
+
+```bash
+seq-tools ec "GGGGUUUUCCCC"
+seq-tools ec input.csv -nt RNA -ds  # RNA, double-stranded
+```
+
+### `edit-distance`
+Calculate the average edit distance of a sequence library.
+
+```bash
+seq-tools edit-distance input.csv
+seq-tools edit-distance input.csv --parallel --workers 4
+```
+
+### `fold`
+Fold RNA sequences using ViennaRNA.
+
+```bash
+seq-tools fold "GGGGUUUUCCCC"
+seq-tools fold input.csv
+```
+
+### `mw`
+Calculate the molecular weight for each sequence.
+
+```bash
+seq-tools mw "ATCG"
+seq-tools mw input.csv -nt DNA -ds  # DNA, double-stranded
+```
+
+### `rc`
+Calculate reverse complement for each sequence.
+
+```bash
+seq-tools rc "ATCG"
+seq-tools rc input.csv -nt DNA
+```
+
+### `to-dna`
+Convert RNA sequences to DNA (replace U with T).
+
+```bash
+seq-tools to-dna "AUCG"
+seq-tools to-dna input.csv -o output.csv
+```
+
+### `to-dna-template`
+Convert RNA sequences to DNA template with T7 promoter.
+
+```bash
+seq-tools to-dna-template "AUCG"
+seq-tools to-dna-template input.csv
+```
+
+### `to-rna`
+Convert DNA sequences to RNA (replace T with U).
+
+```bash
+seq-tools to-rna "ATCG"
+seq-tools to-rna input.csv
+```
+
+### `transcribe`
+Transcribe DNA template sequences to RNA (removes T7 promoter).
+
+```bash
+seq-tools transcribe input.csv
+```
+
+### `trim`
+Trim 5'/3' ends of sequences.
+
+```bash
+seq-tools trim input.csv --start 5 --end 3
+```
+
+### `to-fasta`
+Generate FASTA file from CSV.
+
+```bash
+seq-tools to-fasta input.csv output.fasta
+```
+
+### `to-opool`
+Generate oligo pool file (Excel) from CSV.
+
+```bash
+seq-tools to-opool input.csv "pool_name" output.xlsx
+```
+
+## DataFrame Functions
+
+The package provides comprehensive DataFrame operations:
+
+- **Conversion**: `to_dna_df()`, `to_rna_df()`, `to_dna_template_df()`
+- **Analysis**: `get_molecular_weight_df()`, `get_extinction_coeff()`, `get_length()`
+- **Structure**: `fold()` - predict RNA secondary structures
+- **Manipulation**: `add()`, `trim()`, `get_reverse_complement_df()`
+- **Generation**: `generate_random_sequences()`, `generate_mutated_sequences()`
+- **Validation**: `has_t7_promoter()`, `has_5p_sequence()`, `has_3p_sequence()`
+- **File I/O**: `to_fasta()`, `to_opool()`
+
+See the [notebooks](notebooks/) directory for detailed examples.
+
+## Requirements
+
+- Python 3.7+
+- pandas
+- numpy
+- ViennaRNA (for structure prediction)
+- editdistance
+- click
+- tabulate
+
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/jyesselm/seq_tools.git
+cd seq_tools
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in editable mode
+pip install -e .
+
+# Run tests
+pytest test/ -v
+```
+
+## License
+
+See [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Joe Yesselman** - jyesselm@unl.edu
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
