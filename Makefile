@@ -1,4 +1,4 @@
-.PHONY: help lint format test install clean
+.PHONY: help lint format test install clean build publish publish-test
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -33,4 +33,16 @@ clean: ## Clean build artifacts
 check: lint test ## Run all checks (lint + test)
 
 ci: format check ## Format code and run all checks (for CI)
+
+build: clean ## Build distribution packages
+	python -m pip install --upgrade build
+	python -m build
+
+publish-test: build ## Publish to TestPyPI (for testing)
+	python -m pip install --upgrade twine
+	python -m twine upload --repository testpypi dist/*
+
+publish: build ## Publish to PyPI (production)
+	python -m pip install --upgrade twine
+	python -m twine upload dist/*
 

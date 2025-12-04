@@ -8,7 +8,7 @@ using pandas DataFrames.
 
 __author__ = "Joe Yesselman"
 __email__ = "jyesselm@unl.edu"
-__version__ = "0.7.2"
+__version__ = "0.8.0"
 
 # Extinction coefficient functions
 from .extinction_coeff import get_extinction_coeff

@@ -563,6 +563,7 @@ def trim_p5_and_p3(df: pd.DataFrame, extra_columns: list[str] = []) -> pd.DataFr
     df_p5 = pd.read_csv(get_resources_path() / "p5_sequences.csv")
     df_p3 = pd.read_csv(get_resources_path() / "p3_sequences.csv")
     common_p5_seq = ""
+    common_p3_seq = ""
     for p5_seq in df_p5["sequence"]:
         if has_5p_sequence(df, p5_seq):
             common_p5_seq = p5_seq
@@ -571,6 +572,138 @@ def trim_p5_and_p3(df: pd.DataFrame, extra_columns: list[str] = []) -> pd.DataFr
             common_p3_seq = p3_seq
     if len(common_p5_seq) == 0 or len(common_p3_seq) == 0:
         raise ValueError("No common p5 or p3 sequence found")
+    return trim(df, len(common_p5_seq), len(common_p3_seq), extra_columns)
+
+
+def remove_common_p5_p3(df: pd.DataFrame, extra_columns: list[str] = []) -> pd.DataFrame:
+    """
+    Identifies and removes common 5' and 3' sequences from the DataFrame.
+
+    This function reads CSV files containing p5 and p3 sequences, identifies
+    which common sequences are present in all sequences in the DataFrame,
+    and removes them.
+
+    Args:
+        df: DataFrame containing sequences.
+        extra_columns: Additional columns to trim along with sequence.
+
+    Returns:
+        DataFrame with common 5' and 3' sequences removed.
+
+    Raises:
+        ValueError: If no common p5 or p3 sequence is found.
+    """
+    df_p5 = pd.read_csv(get_resources_path() / "p5_sequences.csv")
+    df_p3 = pd.read_csv(get_resources_path() / "p3_sequences.csv")
+    
+    common_p5_seq = ""
+    common_p3_seq = ""
+    
+    # Find common p5 sequence (check all sequences)
+    for _, row in df_p5.iterrows():
+        p5_seq = row["sequence"]
+        if has_5p_sequence(df, p5_seq):
+            common_p5_seq = p5_seq
+            break
+    
+    # Find common p3 sequence (check all sequences)
+    for _, row in df_p3.iterrows():
+        p3_seq = row["sequence"]
+        if has_3p_sequence(df, p3_seq):
+            common_p3_seq = p3_seq
+            break
+    
+    if len(common_p5_seq) == 0 and len(common_p3_seq) == 0:
+        raise ValueError("No common p5 or p3 sequence found")
+    
+    return trim(df, len(common_p5_seq), len(common_p3_seq), extra_columns)
+
+
+def remove_common_p5_p3_by_structure(df: pd.DataFrame, extra_columns: list[str] = []) -> pd.DataFrame:
+    """
+    Identifies and removes common 5' and 3' sequences based on both sequence and structure.
+
+    This function matches sequences that have both matching sequence and structure
+    patterns from the resource files. It checks the p5_sequences.csv which contains
+    both sequence and structure information.
+
+    Args:
+        df: DataFrame containing sequences and optionally structures.
+        extra_columns: Additional columns to trim along with sequence.
+
+    Returns:
+        DataFrame with common 5' and 3' sequences removed based on structure matching.
+
+    Raises:
+        ValueError: If no matching sequence/structure pattern is found, or if
+                    structure column is missing when required.
+    """
+    df_p5 = pd.read_csv(get_resources_path() / "p5_sequences.csv")
+    df_p3 = pd.read_csv(get_resources_path() / "p3_sequences.csv")
+    
+    common_p5_seq = ""
+    common_p5_struct = ""
+    common_p3_seq = ""
+    common_p3_struct = ""
+    
+    # Check if structure column exists
+    has_structure = "structure" in df.columns
+    
+    # Find common p5 sequence and structure
+    for _, row in df_p5.iterrows():
+        p5_seq = row["sequence"]
+        p5_struct = row.get("structure", "")
+        
+        # Check sequence match
+        if not has_5p_sequence(df, p5_seq):
+            continue
+        
+        # If structure is provided in resource and dataframe, check structure match
+        if p5_struct and has_structure:
+            p5_struct_len = len(p5_struct)
+            if p5_struct_len > 0:
+                # Check if all sequences start with matching structure
+                struct_match = df["structure"].str[:p5_struct_len] == p5_struct
+                if struct_match.all():
+                    common_p5_seq = p5_seq
+                    common_p5_struct = p5_struct
+                    break
+        else:
+            # Just sequence match
+            common_p5_seq = p5_seq
+            if p5_struct:
+                common_p5_struct = p5_struct
+            break
+    
+    # Find common p3 sequence and structure
+    for _, row in df_p3.iterrows():
+        p3_seq = row["sequence"]
+        p3_struct = row.get("structure", "")
+        
+        # Check sequence match
+        if not has_3p_sequence(df, p3_seq):
+            continue
+        
+        # If structure is provided in resource and dataframe, check structure match
+        if p3_struct and has_structure:
+            p3_struct_len = len(p3_struct)
+            if p3_struct_len > 0:
+                # Check if all sequences end with matching structure
+                struct_match = df["structure"].str[-p3_struct_len:] == p3_struct
+                if struct_match.all():
+                    common_p3_seq = p3_seq
+                    common_p3_struct = p3_struct
+                    break
+        else:
+            # Just sequence match
+            common_p3_seq = p3_seq
+            if p3_struct:
+                common_p3_struct = p3_struct
+            break
+    
+    if len(common_p5_seq) == 0 and len(common_p3_seq) == 0:
+        raise ValueError("No common p5 or p3 sequence/structure pattern found")
+    
     return trim(df, len(common_p5_seq), len(common_p3_seq), extra_columns)
 
 

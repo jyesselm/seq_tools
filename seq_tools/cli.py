@@ -10,6 +10,7 @@ import pandas as pd
 from seq_tools import sequence, dataframe
 from seq_tools.logger import setup_applevel_logger, get_logger
 from seq_tools.validation import validate_dataframe as validate_df, ensure_name_column
+from seq_tools.utils import get_resources_path
 
 pd.set_option("display.max_colwidth", None)
 
@@ -77,15 +78,19 @@ def handle_output(df, output) -> None:
     log = get_logger("handle_output")
     if len(df) == 1:
         log.info(f"output->\n{df.iloc[0]}")
+        log.info(f"Writing output to: {output}")
+        df.to_csv(output, index=False)
     else:
-        log.info(f"output csv: {output}")
+        log.info(f"Writing output CSV to: {output}")
         if len(df) > 100:
             log.info(
                 "\n" + tabulate.tabulate(df[0:100], headers="keys", tablefmt="simple")
             )
+            log.info(f"... (showing first 100 of {len(df)} rows)")
         else:
             log.info("\n" + tabulate.tabulate(df, headers="keys", tablefmt="simple"))
         df.to_csv(output, index=False)
+        log.info(f"Successfully wrote {len(df)} sequences to {output}")
 
 
 @click.group()
@@ -99,7 +104,7 @@ def cli():
 @click.argument("data")
 @click.option("-p5", "--p5-seq", default="")
 @click.option("-p3", "--p3-seq", default="")
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def add(data, p5_seq, p3_seq, output):
     """
     adds a sequence to a dataframe
@@ -153,7 +158,7 @@ def edit_distance(data, parallel, workers, use_threads):
     help="type of nucleic acid",
 )
 @click.option("-ds", "--double-stranded", is_flag=True)
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def ec(data, ntype, double_stranded, output):
     """
     calculates the extinction coefficient for each sequence
@@ -182,7 +187,7 @@ def ec(data, ntype, double_stranded, output):
     help="type of nucleic acid",
 )
 @click.option("-ds", "--double-stranded", is_flag=True)
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def mw(data, ntype, double_stranded, output):
     """
     calculates the molecular weight for each sequence
@@ -210,7 +215,7 @@ def mw(data, ntype, double_stranded, output):
     type=click.Choice([None, "RNA", "DNA"]),
     help="type of nucleic acid",
 )
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def rc(data, ntype, output):
     """
     calculates the reverse complement for each sequence
@@ -226,7 +231,7 @@ def rc(data, ntype, output):
 
 @cli.command(help="fold rna sequences")
 @click.argument("data")
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def fold(data, output):
     """
     fold rna sequences
@@ -296,7 +301,7 @@ def has_p3(data, p3_seq, ntype):
 
 @cli.command(help="convert rna sequence(s) to dna")
 @click.argument("data")
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def to_dna(data, output):
     """
     Convert RNA sequence to DNA
@@ -310,7 +315,7 @@ def to_dna(data, output):
 
 @cli.command(help="convert rna sequence(s) to dna template, includes T7 promoter")
 @click.argument("data")
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def to_dna_template(data, output):
     """
     Convert RNA sequence to DNA
@@ -324,7 +329,7 @@ def to_dna_template(data, output):
 
 @cli.command(help="generate fasta file from csv")
 @click.argument("data")
-@click.option("-o", "--output", help="output file", default="test.fasta")
+@click.option("-o", "--output", help="output file (default: output.fasta)", default="output.fasta")
 def to_fasta(data, output):
     """
     generate fasta file from csv
@@ -332,14 +337,17 @@ def to_fasta(data, output):
     :param output: output file
     """
     setup_applevel_logger()
+    log = get_logger("to_fasta")
     df = get_input_dataframe(data)
+    log.info(f"Writing FASTA output to: {output}")
     dataframe.to_fasta(df, output)
+    log.info(f"Successfully wrote {len(df)} sequences to {output}")
 
 
 @cli.command(help="generate oligo pool file from csv")
 @click.argument("data")
 @click.option("-n", "--name", help="name of the opool file", default="opool")
-@click.option("-o", "--output", help="output file", default="opool.xlsx")
+@click.option("-o", "--output", help="output file (default: output.xlsx)", default="output.xlsx")
 def to_opool(data, name, output):
     """
     generate opool file from csv
@@ -347,13 +355,16 @@ def to_opool(data, name, output):
     :param output: output file
     """
     setup_applevel_logger()
+    log = get_logger("to_opool")
     df = get_input_dataframe(data)
+    log.info(f"Writing opool output to: {output}")
     dataframe.to_opool(df, name, output)
+    log.info(f"Successfully wrote {len(df)} sequences to {output}")
 
 
 @cli.command(help="convert rna sequence(s) to dna")
 @click.argument("data")
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def to_rna(data, output):
     """
     Convert DNA sequence to RNA
@@ -370,7 +381,7 @@ def to_rna(data, output):
 @click.argument("data")
 @click.option("-p5", "--p5-cut", default=0)
 @click.option("-p3", "--p3-cut", default=0)
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def trim(data, p5_cut, p3_cut, output):
     """
     trim 5'/3' ends of sequences
@@ -387,7 +398,7 @@ def trim(data, p5_cut, p3_cut, output):
 
 @cli.command(help="convert dna sequence(s) to rna")
 @click.argument("data")
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def transcribe(data, output):
     """
     Convert DNA sequence to RN
@@ -436,7 +447,7 @@ def transcribe(data, output):
     type=click.Choice(["DNA", "RNA"]),
     help="type of nucleic acid",
 )
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def mutate(template, num_sequences, num_mutations, p5_seq, p3_seq, ntype, output):
     """
     generates mutated sequences from a template sequence with optional constant 5' and 3' ends
@@ -519,7 +530,7 @@ def mutate(template, num_sequences, num_mutations, p5_seq, p3_seq, ntype, output
     type=click.Choice(["DNA", "RNA"]),
     help="type of nucleic acid",
 )
-@click.option("-o", "--output", help="output file", default="output.csv")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def random(length, num_sequences, p5_seq, p3_seq, ntype, output):
     """
     generates random sequences with optional constant 5' and 3' ends
@@ -548,6 +559,97 @@ def random(length, num_sequences, p5_seq, p3_seq, ntype, output):
         ntype=ntype,
     )
     handle_output(df, output)
+
+
+@cli.command(name="list-common-seqs", help="list available 5' and 3' common sequences")
+def list_common_seqs():
+    """
+    Lists all available 5' and 3' common sequences from resource files in nice tables.
+    """
+    setup_applevel_logger()
+    log = get_logger("list_common_seqs")
+    
+    # Load p5 sequences
+    p5_path = get_resources_path() / "p5_sequences.csv"
+    if p5_path.exists():
+        df_p5 = pd.read_csv(p5_path)
+        log.info("\nAvailable 5' sequences:")
+        log.info("\n" + tabulate.tabulate(
+            df_p5,
+            headers="keys",
+            tablefmt="simple",
+            showindex=False
+        ))
+    else:
+        log.warning(f"p5_sequences.csv not found at {p5_path}")
+    
+    # Load p3 sequences
+    p3_path = get_resources_path() / "p3_sequences.csv"
+    if p3_path.exists():
+        df_p3 = pd.read_csv(p3_path)
+        log.info("\n\nAvailable 3' sequences:")
+        log.info("\n" + tabulate.tabulate(
+            df_p3,
+            headers="keys",
+            tablefmt="simple",
+            showindex=False
+        ))
+    else:
+        log.warning(f"p3_sequences.csv not found at {p3_path}")
+
+
+@cli.command(help="identify and remove common 5' and 3' sequences from CSV")
+@click.argument("data")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
+def remove_primers(data, output):
+    """
+    Identifies and removes common 5' and 3' sequences from sequences in a CSV file.
+    
+    This command checks all sequences in the input CSV against known 5' and 3'
+    sequences from resource files and removes any that are found in all sequences.
+    
+    :param data: Input CSV file with sequences
+    :param output: Output CSV file
+    """
+    setup_applevel_logger()
+    log = get_logger("remove_primers")
+    
+    df = get_input_dataframe(data)
+    
+    try:
+        df = dataframe.remove_common_p5_p3(df)
+        log.info("Successfully identified and removed common 5' and/or 3' sequences")
+        handle_output(df, output)
+    except ValueError as e:
+        log.error(f"Error: {e}")
+        raise click.ClickException(str(e))
+
+
+@cli.command(help="identify and remove common 5' and 3' sequences based on sequence and structure")
+@click.argument("data")
+@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
+def remove_primers_structure(data, output):
+    """
+    Identifies and removes common 5' and 3' sequences based on both sequence and structure.
+    
+    This command matches sequences that have both matching sequence and structure
+    patterns from the resource files. It requires a 'structure' column in the input CSV.
+    
+    :param data: Input CSV file with sequences and optionally structures
+    :param output: Output CSV file
+    """
+    setup_applevel_logger()
+    log = get_logger("remove_primers_structure")
+    
+    df = get_input_dataframe(data)
+    
+    try:
+        df = dataframe.remove_common_p5_p3_by_structure(df)
+        log.info("Successfully identified and removed common 5' and/or 3' sequences based on sequence and structure")
+        handle_output(df, output)
+    except ValueError as e:
+        log.error(f"Error: {e}")
+        raise click.ClickException(str(e))
 
 
 # pylint: disable=no-value-for-parameter
