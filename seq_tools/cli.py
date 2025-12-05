@@ -68,11 +68,12 @@ def get_ntype(df, ntype) -> str:
     return df_ntype
 
 
-def handle_output(df, output) -> None:
+def handle_output(df, output, show_all: bool = False) -> None:
     """
     handles the output of the dataframe
     :param df: dataframe with sequences
     :param output: output file
+    :param show_all: if True, show all sequences; if False, show only first
     :return: None
     """
     log = get_logger("handle_output")
@@ -82,13 +83,22 @@ def handle_output(df, output) -> None:
         df.to_csv(output, index=False)
     else:
         log.info(f"Writing output CSV to: {output}")
-        if len(df) > 100:
-            log.info(
-                "\n" + tabulate.tabulate(df[0:100], headers="keys", tablefmt="simple")
-            )
-            log.info(f"... (showing first 100 of {len(df)} rows)")
+        if show_all:
+            if len(df) > 100:
+                log.info(
+                    "\n" + tabulate.tabulate(df[0:100], headers="keys", tablefmt="simple")
+                )
+                log.info(f"... (showing first 100 of {len(df)} rows)")
+            else:
+                log.info("\n" + tabulate.tabulate(df, headers="keys", tablefmt="simple"))
         else:
-            log.info("\n" + tabulate.tabulate(df, headers="keys", tablefmt="simple"))
+            log.info(f"\nFirst sequence (showing 1 of {len(df)}):")
+            log.info("\n" + tabulate.tabulate(
+                df.iloc[0:1],
+                headers="keys",
+                tablefmt="simple",
+                showindex=False
+            ))
         df.to_csv(output, index=False)
         log.info(f"Successfully wrote {len(df)} sequences to {output}")
 
@@ -114,7 +124,14 @@ def add(data, p5_seq, p3_seq, output):
     :param output: output file
     """
     setup_applevel_logger()
+    log = get_logger("add")
     df = get_input_dataframe(data)
+    
+    if p5_seq:
+        log.info(f"Adding 5' sequence: {p5_seq} (length: {len(p5_seq)})")
+    if p3_seq:
+        log.info(f"Adding 3' sequence: {p3_seq} (length: {len(p3_seq)})")
+    
     df = dataframe.add(df, p5_seq, p3_seq)
     handle_output(df, output)
 
@@ -172,9 +189,15 @@ def ec(data, ntype, double_stranded, output):
     df = get_input_dataframe(data)
     ntype = get_ntype(df, ntype)
     df = dataframe.get_extinction_coeff(df, ntype, double_stranded)
+    if len(df) > 0 and "extinction_coeff" in df.columns:
+        first_ec = df.iloc[0]["extinction_coeff"]
+        log.info(f"Calculated extinction coefficients for {ntype} ({'double-stranded' if double_stranded else 'single-stranded'})")
+        if len(df) == 1:
+            log.info(f"Extinction coefficient: {first_ec:.0f} M⁻¹cm⁻¹")
+        else:
+            log.info(f"First sequence extinction coefficient: {first_ec:.0f} M⁻¹cm⁻¹")
+            log.info(f"Average extinction coefficient: {df['extinction_coeff'].mean():.0f} M⁻¹cm⁻¹")
     handle_output(df, output)
-    if len(df) != 1:
-        log.info("avg extinction coefficient: " + str(df["extinction_coeff"].mean()))
 
 
 @cli.command(help="calculate the molecular weight for each sequence")
@@ -197,13 +220,19 @@ def mw(data, ntype, double_stranded, output):
     :return:
     """
     setup_applevel_logger()
+    log = get_logger("molecular_weight")
     df = get_input_dataframe(data)
     ntype = get_ntype(df, ntype)
     df = dataframe.get_molecular_weight(df, ntype, double_stranded)
+    if len(df) > 0 and "mw" in df.columns:
+        first_mw = df.iloc[0]["mw"]
+        log.info(f"Calculated molecular weights for {ntype} ({'double-stranded' if double_stranded else 'single-stranded'})")
+        if len(df) == 1:
+            log.info(f"Molecular weight: {first_mw:.2f} Da")
+        else:
+            log.info(f"First sequence molecular weight: {first_mw:.2f} Da")
+            log.info(f"Average molecular weight: {df['mw'].mean():.2f} Da")
     handle_output(df, output)
-    log = get_logger("molecular_weight")
-    if len(df) != 1:
-        log.info("avg molecular weight: " + str(df["molecular_weight"].mean()))
 
 
 @cli.command(help="calculate reverse complement for each sequence")
@@ -223,9 +252,16 @@ def rc(data, ntype, output):
     :param output: output file
     """
     setup_applevel_logger()
+    log = get_logger("rc")
     df = get_input_dataframe(data)
     ntype = get_ntype(df, ntype)
+    original_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
     df = dataframe.get_reverse_complement(df, ntype)
+    if original_seq and len(df) > 0:
+        rev_comp = df.iloc[0]["rev_comp"] if "rev_comp" in df.columns else ""
+        log.info(f"Calculated reverse complement for {ntype}")
+        if len(df) == 1:
+            log.info(f"Example: {original_seq[:20]}... -> {rev_comp[:20]}...")
     handle_output(df, output)
 
 
@@ -238,14 +274,22 @@ def fold(data, output):
     :param data: can be a sequence or a file
     """
     setup_applevel_logger()
+    log = get_logger("fold")
     df = get_input_dataframe(data)
     df = dataframe.fold(df)
+    if len(df) > 0 and "structure" in df.columns:
+        first_row = df.iloc[0]
+        log.info(f"Folded sequences using ViennaRNA")
+        if len(df) == 1:
+            log.info(f"Structure: {first_row.get('structure', 'N/A')}")
+            log.info(f"MFE: {first_row.get('mfe', 'N/A')} kcal/mol")
+            log.info(f"Ensemble defect: {first_row.get('ens_defect', 'N/A')}")
     handle_output(df, output)
 
 
 @cli.command(help="checks to see if p5 is present in all sequences")
 @click.argument("data")
-@click.option("-p5", "--p5-seq", help="p5 sequence", required=True)
+@click.option("-p5", "--p5-seq", help="p5 sequence (if not provided, finds longest common prefix)", default=None)
 @click.option(
     "-nt",
     "--ntype",
@@ -255,25 +299,86 @@ def fold(data, output):
 )
 def has_p5(data, p5_seq, ntype):
     """
-    checks if a sequence has a p5 sequence
+    checks if a sequence has a p5 sequence. If no p5 sequence is provided,
+    automatically finds the longest common prefix from all sequences.
     :param data: can be a sequence or a file
-    :param p5_seq: p5 sequence
+    :param p5_seq: p5 sequence (optional)
     :param ntype: type of nucleic acid
     """
     setup_applevel_logger()
-    df = get_input_dataframe(data)
-    get_ntype(df, ntype)
-    has_p5_seq = dataframe.has_5p_sequence(df, p5_seq)
     log = get_logger("has_p5")
-    if has_p5_seq:
-        log.info("p5 sequence is present in all sequences")
+    df = get_input_dataframe(data)
+    if ntype is not None:
+        get_ntype(df, ntype)
+    
+    # Load known p5 sequences
+    df_p5 = pd.read_csv(get_resources_path() / "p5_sequences.csv")
+    
+    if p5_seq is None:
+        # Find longest common prefix
+        common_prefix = dataframe.find_longest_common_prefix(df)
+        if common_prefix:
+            log.info(f"Found longest common 5' sequence: {common_prefix} (length: {len(common_prefix)})")
+            log.info("This sequence is present at the 5' end of all sequences")
+            
+            # Check if it matches any known p5 sequences
+            matching_known = []
+            for _, row in df_p5.iterrows():
+                known_seq = row["sequence"]
+                known_name = row.get("name", "unknown")
+                # Check if the common prefix starts with or matches a known sequence
+                if common_prefix.startswith(known_seq):
+                    matching_known.append(row)
+                elif known_seq.startswith(common_prefix):
+                    matching_known.append(row)
+            
+            if matching_known:
+                log.info("\nMatching known p5 sequences:")
+                for row in matching_known:
+                    name = row.get("name", "unknown")
+                    seq = row.get("sequence", "")
+                    code = row.get("code", "")
+                    structure = row.get("structure", "")
+                    log.info(f"  - {name}: {seq}")
+                    if code:
+                        log.info(f"    Code: {code}")
+                    if structure:
+                        log.info(f"    Structure: {structure}")
+            else:
+                log.info("No matching known p5 sequences found in resource file")
+        else:
+            log.info("No common 5' sequence found in all sequences")
     else:
-        log.info("p5 sequence is not present in all sequences")
+        has_p5_seq = dataframe.has_5p_sequence(df, p5_seq)
+        if has_p5_seq:
+            log.info(f"p5 sequence '{p5_seq}' is present in all sequences")
+            
+            # Check if it matches any known p5 sequences
+            matching_known = []
+            for _, row in df_p5.iterrows():
+                known_seq = row["sequence"]
+                if p5_seq == known_seq or p5_seq.startswith(known_seq) or known_seq.startswith(p5_seq):
+                    matching_known.append(row)
+            
+            if matching_known:
+                log.info("\nMatching known p5 sequences:")
+                for row in matching_known:
+                    name = row.get("name", "unknown")
+                    seq = row.get("sequence", "")
+                    code = row.get("code", "")
+                    structure = row.get("structure", "")
+                    log.info(f"  - {name}: {seq}")
+                    if code:
+                        log.info(f"    Code: {code}")
+                    if structure:
+                        log.info(f"    Structure: {structure}")
+        else:
+            log.info(f"p5 sequence '{p5_seq}' is not present in all sequences")
 
 
 @cli.command(help="checks to see if p3 is present in all sequences")
 @click.argument("data")
-@click.option("-p3", "--p3-seq", help="p3 sequence", required=True)
+@click.option("-p3", "--p3-seq", help="p3 sequence (if not provided, finds longest common suffix)", default=None)
 @click.option(
     "-nt",
     "--ntype",
@@ -283,20 +388,80 @@ def has_p5(data, p5_seq, ntype):
 )
 def has_p3(data, p3_seq, ntype):
     """
-    checks if a sequence has a p3 sequence
+    checks if a sequence has a p3 sequence. If no p3 sequence is provided,
+    automatically finds the longest common suffix from all sequences.
     :param data: can be a sequence or a file
-    :param p3_seq: p3 sequence
+    :param p3_seq: p3 sequence (optional)
     :param ntype: type of nucleic acid
     """
     setup_applevel_logger()
-    df = get_input_dataframe(data)
-    get_ntype(df, ntype)
-    has_p3_seq = dataframe.has_5p_sequence(df, p3_seq)
     log = get_logger("has_p3")
-    if has_p3_seq:
-        log.info("p3 sequence is present in all sequences")
+    df = get_input_dataframe(data)
+    if ntype is not None:
+        get_ntype(df, ntype)
+    
+    # Load known p3 sequences
+    df_p3 = pd.read_csv(get_resources_path() / "p3_sequences.csv")
+    
+    if p3_seq is None:
+        # Find longest common suffix
+        common_suffix = dataframe.find_longest_common_suffix(df)
+        if common_suffix:
+            log.info(f"Found longest common 3' sequence: {common_suffix} (length: {len(common_suffix)})")
+            log.info("This sequence is present at the 3' end of all sequences")
+            
+            # Check if it matches any known p3 sequences
+            matching_known = []
+            for _, row in df_p3.iterrows():
+                known_seq = row["sequence"]
+                # Check if the common suffix ends with or matches a known sequence
+                if common_suffix.endswith(known_seq):
+                    matching_known.append(row)
+                elif known_seq.endswith(common_suffix):
+                    matching_known.append(row)
+            
+            if matching_known:
+                log.info("\nMatching known p3 sequences:")
+                for row in matching_known:
+                    name = row.get("name", "unknown")
+                    seq = row.get("sequence", "")
+                    code = row.get("code", "")
+                    structure = row.get("structure", "")
+                    log.info(f"  - {name}: {seq}")
+                    if code:
+                        log.info(f"    Code: {code}")
+                    if structure:
+                        log.info(f"    Structure: {structure}")
+            else:
+                log.info("No matching known p3 sequences found in resource file")
+        else:
+            log.info("No common 3' sequence found in all sequences")
     else:
-        log.info("p3 sequence is not present in all sequences")
+        has_p3_seq = dataframe.has_3p_sequence(df, p3_seq)
+        if has_p3_seq:
+            log.info(f"p3 sequence '{p3_seq}' is present in all sequences")
+            
+            # Check if it matches any known p3 sequences
+            matching_known = []
+            for _, row in df_p3.iterrows():
+                known_seq = row["sequence"]
+                if p3_seq == known_seq or p3_seq.endswith(known_seq) or known_seq.endswith(p3_seq):
+                    matching_known.append(row)
+            
+            if matching_known:
+                log.info("\nMatching known p3 sequences:")
+                for row in matching_known:
+                    name = row.get("name", "unknown")
+                    seq = row.get("sequence", "")
+                    code = row.get("code", "")
+                    structure = row.get("structure", "")
+                    log.info(f"  - {name}: {seq}")
+                    if code:
+                        log.info(f"    Code: {code}")
+                    if structure:
+                        log.info(f"    Structure: {structure}")
+        else:
+            log.info(f"p3 sequence '{p3_seq}' is not present in all sequences")
 
 
 @cli.command(help="convert rna sequence(s) to dna")
@@ -307,9 +472,16 @@ def to_dna(data, output):
     Convert RNA sequence to DNA
     """
     setup_applevel_logger()
+    log = get_logger("to_dna")
     df = get_input_dataframe(data)
+    original_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
     df = df[["name", "sequence"]]
     df = dataframe.to_dna(df)
+    if original_seq:
+        converted_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
+        log.info(f"Converted RNA to DNA (U -> T)")
+        if len(df) == 1:
+            log.info(f"Example: {original_seq[:20]}... -> {converted_seq[:20]}...")
     handle_output(df, output)
 
 
@@ -318,12 +490,20 @@ def to_dna(data, output):
 @click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def to_dna_template(data, output):
     """
-    Convert RNA sequence to DNA
+    Convert RNA sequence to DNA template with T7 promoter
     """
     setup_applevel_logger()
+    log = get_logger("to_dna_template")
     df = get_input_dataframe(data)
+    original_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
     df = df[["name", "sequence"]]
     df = dataframe.to_dna_template(df)
+    if original_seq:
+        converted_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
+        log.info(f"Converted RNA to DNA template with T7 promoter")
+        if len(df) == 1:
+            log.info(f"Added T7 promoter (20 bases) and converted U -> T")
+            log.info(f"Example: {original_seq[:20]}... -> {converted_seq[:40]}...")
     handle_output(df, output)
 
 
@@ -362,7 +542,7 @@ def to_opool(data, name, output):
     log.info(f"Successfully wrote {len(df)} sequences to {output}")
 
 
-@cli.command(help="convert rna sequence(s) to dna")
+@cli.command(help="convert dna sequence(s) to rna")
 @click.argument("data")
 @click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def to_rna(data, output):
@@ -370,10 +550,17 @@ def to_rna(data, output):
     Convert DNA sequence to RNA
     """
     setup_applevel_logger()
+    log = get_logger("to_rna")
     df = get_input_dataframe(data)
+    original_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
     df = df[["name", "sequence"]]
-    # apply sequence.to_dna to `sequence` column
+    # apply sequence.to_rna to `sequence` column
     df["sequence"] = df["sequence"].apply(sequence.to_rna)
+    if original_seq:
+        converted_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
+        log.info(f"Converted DNA to RNA (T -> U)")
+        if len(df) == 1:
+            log.info(f"Example: {original_seq[:20]}... -> {converted_seq[:20]}...")
     handle_output(df, output)
 
 
@@ -391,7 +578,14 @@ def trim(data, p5_cut, p3_cut, output):
     :param output: output file
     """
     setup_applevel_logger()
+    log = get_logger("trim")
     df = get_input_dataframe(data)
+    
+    if p5_cut > 0:
+        log.info(f"Trimming {p5_cut} bases from 5' end")
+    if p3_cut > 0:
+        log.info(f"Trimming {p3_cut} bases from 3' end")
+    
     df = dataframe.trim(df, p5_cut, p3_cut)
     handle_output(df, output)
 
@@ -401,12 +595,19 @@ def trim(data, p5_cut, p3_cut, output):
 @click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
 def transcribe(data, output):
     """
-    Convert DNA sequence to RN
+    Transcribe DNA sequence to RNA (removes T7 promoter if present)
     """
     setup_applevel_logger()
+    log = get_logger("transcribe")
     df = get_input_dataframe(data)
+    original_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
     df = df[["name", "sequence"]]
     df = dataframe.transcribe(df)
+    if original_seq:
+        transcribed_seq = df.iloc[0]["sequence"] if len(df) > 0 else ""
+        log.info(f"Transcribed DNA to RNA (removed T7 promoter if present, T -> U)")
+        if len(df) == 1:
+            log.info(f"Example: {original_seq[:30]}... -> {transcribed_seq[:20]}...")
     handle_output(df, output)
 
 
@@ -598,55 +799,53 @@ def list_common_seqs():
         log.warning(f"p3_sequences.csv not found at {p3_path}")
 
 
-@cli.command(help="identify and remove common 5' and 3' sequences from CSV")
+@cli.command(name="remove-common-seqs", help="identify and remove common 5' and 3' sequences, checking both sequence and structure")
 @click.argument("data")
 @click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
-def remove_primers(data, output):
+def remove_common_seqs(data, output):
     """
     Identifies and removes common 5' and 3' sequences from sequences in a CSV file.
     
     This command checks all sequences in the input CSV against known 5' and 3'
-    sequences from resource files and removes any that are found in all sequences.
-    
-    :param data: Input CSV file with sequences
-    :param output: Output CSV file
-    """
-    setup_applevel_logger()
-    log = get_logger("remove_primers")
-    
-    df = get_input_dataframe(data)
-    
-    try:
-        df = dataframe.remove_common_p5_p3(df)
-        log.info("Successfully identified and removed common 5' and/or 3' sequences")
-        handle_output(df, output)
-    except ValueError as e:
-        log.error(f"Error: {e}")
-        raise click.ClickException(str(e))
-
-
-@cli.command(help="identify and remove common 5' and 3' sequences based on sequence and structure")
-@click.argument("data")
-@click.option("-o", "--output", help="output file (default: output.csv)", default="output.csv")
-def remove_primers_structure(data, output):
-    """
-    Identifies and removes common 5' and 3' sequences based on both sequence and structure.
-    
-    This command matches sequences that have both matching sequence and structure
-    patterns from the resource files. It requires a 'structure' column in the input CSV.
+    sequences from resource files. It attempts to match both sequence and structure
+    patterns, and provides warnings if only sequence or only structure matches.
     
     :param data: Input CSV file with sequences and optionally structures
     :param output: Output CSV file
     """
     setup_applevel_logger()
-    log = get_logger("remove_primers_structure")
+    log = get_logger("remove_common_seqs")
     
     df = get_input_dataframe(data)
     
     try:
-        df = dataframe.remove_common_p5_p3_by_structure(df)
-        log.info("Successfully identified and removed common 5' and/or 3' sequences based on sequence and structure")
-        handle_output(df, output)
+        df, result = dataframe.remove_common_seqs(df)
+        
+        # Display which sequences were removed
+        removed = result.get("removed", {})
+        if removed.get("p5_sequence"):
+            log.info(f"Removed 5' sequence: {removed['p5_sequence']} (length: {removed['p5_length']})")
+        if removed.get("p3_sequence"):
+            log.info(f"Removed 3' sequence: {removed['p3_sequence']} (length: {removed['p3_length']})")
+        
+        # Display warnings if any
+        if result.get("warnings"):
+            for warning in result["warnings"]:
+                log.warning(warning)
+        
+        log.info("Successfully identified and removed common 5' and/or 3' sequences")
+        
+        # Show only first sequence in output
+        if len(df) > 0:
+            log.info(f"\nFirst sequence (showing 1 of {len(df)}):")
+            log.info("\n" + tabulate.tabulate(
+                df.iloc[0:1],
+                headers="keys",
+                tablefmt="simple",
+                showindex=False
+            ))
+        df.to_csv(output, index=False)
+        log.info(f"\nSuccessfully wrote {len(df)} sequences to {output}")
     except ValueError as e:
         log.error(f"Error: {e}")
         raise click.ClickException(str(e))

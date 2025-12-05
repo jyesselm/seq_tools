@@ -386,6 +386,76 @@ def has_3p_sequence(df: pd.DataFrame, p3_seq: str) -> bool:
     return df["sequence"].str.endswith(p3_seq).all()
 
 
+def find_longest_common_prefix(df: pd.DataFrame) -> str:
+    """Find the longest common prefix sequence from all sequences in the DataFrame.
+
+    Args:
+        df: DataFrame containing sequences.
+
+    Returns:
+        The longest common prefix sequence, or empty string if none found.
+    """
+    if len(df) == 0:
+        return ""
+    
+    sequences = df["sequence"].tolist()
+    if len(sequences) == 0:
+        return ""
+    
+    if len(sequences) == 1:
+        return sequences[0]
+    
+    # Find the minimum length
+    min_len = min(len(seq) for seq in sequences)
+    
+    # Check each position
+    common_prefix = ""
+    for i in range(min_len):
+        # Check if all sequences have the same character at position i
+        char = sequences[0][i]
+        if all(seq[i] == char for seq in sequences):
+            common_prefix += char
+        else:
+            break
+    
+    return common_prefix
+
+
+def find_longest_common_suffix(df: pd.DataFrame) -> str:
+    """Find the longest common suffix sequence from all sequences in the DataFrame.
+
+    Args:
+        df: DataFrame containing sequences.
+
+    Returns:
+        The longest common suffix sequence, or empty string if none found.
+    """
+    if len(df) == 0:
+        return ""
+    
+    sequences = df["sequence"].tolist()
+    if len(sequences) == 0:
+        return ""
+    
+    if len(sequences) == 1:
+        return sequences[0]
+    
+    # Find the minimum length
+    min_len = min(len(seq) for seq in sequences)
+    
+    # Check each position from the end
+    common_suffix = ""
+    for i in range(1, min_len + 1):
+        # Check if all sequences have the same character at position -i
+        char = sequences[0][-i]
+        if all(seq[-i] == char for seq in sequences):
+            common_suffix = char + common_suffix
+        else:
+            break
+    
+    return common_suffix
+
+
 def has_sequence(df: pd.DataFrame, seq: str) -> bool:
     """Check if all sequences contain the given subsequence.
 
@@ -705,6 +775,115 @@ def remove_common_p5_p3_by_structure(df: pd.DataFrame, extra_columns: list[str] 
         raise ValueError("No common p5 or p3 sequence/structure pattern found")
     
     return trim(df, len(common_p5_seq), len(common_p3_seq), extra_columns)
+
+
+def remove_common_seqs(df: pd.DataFrame, extra_columns: list[str] = []) -> tuple[pd.DataFrame, dict]:
+    """
+    Identifies and removes common 5' and 3' sequences, checking both sequence and structure.
+    
+    This function attempts to match both sequence and structure patterns. It provides
+    warnings if only sequence or only structure matches, but will still proceed with
+    removal based on sequence match if structure is not available or doesn't match.
+
+    Args:
+        df: DataFrame containing sequences and optionally structures.
+        extra_columns: Additional columns to trim along with sequence.
+
+    Returns:
+        Tuple of (DataFrame with common sequences removed, dict with warnings).
+        
+    Raises:
+        ValueError: If no common p5 or p3 sequence is found.
+    """
+    
+    df_p5 = pd.read_csv(get_resources_path() / "p5_sequences.csv")
+    df_p3 = pd.read_csv(get_resources_path() / "p3_sequences.csv")
+    
+    common_p5_seq = ""
+    common_p5_struct = ""
+    common_p3_seq = ""
+    common_p3_struct = ""
+    
+    warnings = []
+    
+    # Check if structure column exists
+    has_structure = "structure" in df.columns
+    
+    # Find common p5 sequence and structure
+    for _, row in df_p5.iterrows():
+        p5_seq = row["sequence"]
+        p5_struct = row.get("structure", "")
+        
+        # Check sequence match
+        if not has_5p_sequence(df, p5_seq):
+            continue
+        
+        seq_match = True
+        struct_match = False
+        
+        # Check structure match if both are available
+        if p5_struct and has_structure:
+            p5_struct_len = len(p5_struct)
+            if p5_struct_len > 0:
+                struct_match = df["structure"].str[:p5_struct_len] == p5_struct
+                struct_match = struct_match.all()
+        
+        if seq_match:
+            common_p5_seq = p5_seq
+            if struct_match:
+                common_p5_struct = p5_struct
+            else:
+                if p5_struct and has_structure:
+                    warnings.append(f"5' sequence '{p5_seq}' matches but structure doesn't match")
+                elif p5_struct and not has_structure:
+                    warnings.append(f"5' sequence '{p5_seq}' matches but no structure column found in input")
+            break
+    
+    # Find common p3 sequence and structure
+    for _, row in df_p3.iterrows():
+        p3_seq = row["sequence"]
+        p3_struct = row.get("structure", "")
+        
+        # Check sequence match
+        if not has_3p_sequence(df, p3_seq):
+            continue
+        
+        seq_match = True
+        struct_match = False
+        
+        # Check structure match if both are available
+        if p3_struct and has_structure:
+            p3_struct_len = len(p3_struct)
+            if p3_struct_len > 0:
+                struct_match = df["structure"].str[-p3_struct_len:] == p3_struct
+                struct_match = struct_match.all()
+        
+        if seq_match:
+            common_p3_seq = p3_seq
+            if struct_match:
+                common_p3_struct = p3_struct
+            else:
+                if p3_struct and has_structure:
+                    warnings.append(f"3' sequence '{p3_seq}' matches but structure doesn't match")
+                elif p3_struct and not has_structure:
+                    warnings.append(f"3' sequence '{p3_seq}' matches but no structure column found in input")
+            break
+    
+    if len(common_p5_seq) == 0 and len(common_p3_seq) == 0:
+        raise ValueError("No common p5 or p3 sequence found")
+    
+    removed_info = {}
+    if common_p5_seq:
+        removed_info["p5_sequence"] = common_p5_seq
+        removed_info["p5_length"] = len(common_p5_seq)
+    if common_p3_seq:
+        removed_info["p3_sequence"] = common_p3_seq
+        removed_info["p3_length"] = len(common_p3_seq)
+    
+    return trim(df, len(common_p5_seq), len(common_p3_seq), extra_columns), {
+        "warnings": warnings,
+        "removed": removed_info
+    }
 
 
 def transcribe(df: pd.DataFrame, ignore_missing_t7: bool = False) -> pd.DataFrame:
