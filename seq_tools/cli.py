@@ -127,10 +127,15 @@ def add(data, p5_seq, p3_seq, output):
     log = get_logger("add")
     df = get_input_dataframe(data)
     
+    has_structure = "structure" in df.columns
+    
     if p5_seq:
         log.info(f"Adding 5' sequence: {p5_seq} (length: {len(p5_seq)})")
     if p3_seq:
         log.info(f"Adding 3' sequence: {p3_seq} (length: {len(p3_seq)})")
+    
+    if has_structure:
+        log.info("Structure column detected - sequences will be refolded after adding primers")
     
     df = dataframe.add(df, p5_seq, p3_seq)
     handle_output(df, output)
