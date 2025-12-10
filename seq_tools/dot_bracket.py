@@ -1,5 +1,7 @@
-"""
-simple parsing of dot bracket notation
+"""Simple parsing of dot-bracket notation for RNA secondary structures.
+
+This module provides utilities for converting RNA secondary structure
+representations in dot-bracket notation to pair tables.
 """
 
 import collections as col
@@ -9,10 +11,13 @@ BRACKET_RIGHT = ")]}>abcdefghijklmnopqrstuvwxyz"
 
 
 def inverse_brackets(bracket):
-    """
-    Returns a dictionary that maps each character in bracket to its index.
-    :param bracket:
-    :return:
+    """Create a mapping from bracket characters to their indices.
+
+    Args:
+        bracket: String of bracket characters.
+
+    Returns:
+        Dictionary mapping each character to its index position.
     """
     res = col.defaultdict(int)
     for i, a in enumerate(bracket):
@@ -21,9 +26,21 @@ def inverse_brackets(bracket):
 
 
 def dotbracket_to_pairtable(struct):
-    """
-    Converts arbitrary structure in dot bracket format to pair table
-    (ViennaRNA format).
+    """Convert dot-bracket notation to a pair table.
+
+    Converts RNA secondary structure in dot-bracket format to ViennaRNA
+    pair table format. Supports multiple bracket types and multi-strand
+    structures (with & separator).
+
+    Args:
+        struct: Secondary structure in dot-bracket notation.
+
+    Returns:
+        Pair table as a list where pt[i] is the index of the paired base,
+        or -1 if unpaired.
+
+    Raises:
+        ValueError: If structure is empty, has unbalanced brackets, or is invalid.
     """
     if len(struct) == 0:
         raise ValueError("Cannot convert empty structure to pairtable")

@@ -1,30 +1,22 @@
-"""
-Validation functions for sequences and dataframes
-"""
+"""Validation functions for sequences and dataframes."""
 
 from typing import Optional
+
 import pandas as pd
 
 
 def validate_sequence(
     seq: str, ntype: Optional[str] = None, allow_ambiguous: bool = True
 ) -> None:
-    """
-    Validate sequence format.
+    """Validate sequence format.
 
-    Parameters
-    ----------
-    seq : str
-        The sequence to validate.
-    ntype : str, optional
-        Expected nucleotide type: "DNA" or "RNA". If None, auto-detects.
-    allow_ambiguous : bool, optional
-        Whether to allow ambiguous nucleotides (N) (default: True).
+    Args:
+        seq: The sequence to validate.
+        ntype: Expected nucleotide type: "DNA" or "RNA". If None, auto-detects.
+        allow_ambiguous: Whether to allow ambiguous nucleotides (N). Defaults to True.
 
-    Raises
-    ------
-    ValueError
-        If sequence is invalid or empty.
+    Raises:
+        ValueError: If sequence is invalid or empty.
     """
     if not seq:
         raise ValueError("Sequence cannot be empty")
@@ -58,20 +50,14 @@ def validate_sequence(
 
 
 def validate_dataframe(df: pd.DataFrame, require_name: bool = True) -> None:
-    """
-    Validate a dataframe to have required columns.
+    """Validate a dataframe to have required columns.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame to validate.
-    require_name : bool, optional
-        Whether to require a 'name' column (default: True).
+    Args:
+        df: DataFrame to validate.
+        require_name: Whether to require a 'name' column. Defaults to True.
 
-    Raises
-    ------
-    ValueError
-        If required columns are missing.
+    Raises:
+        ValueError: If required columns are missing.
     """
     if "sequence" not in df.columns:
         raise ValueError("DataFrame must have a 'sequence' column")
@@ -81,17 +67,12 @@ def validate_dataframe(df: pd.DataFrame, require_name: bool = True) -> None:
 
 
 def ensure_name_column(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Ensure dataframe has a 'name' column, adding default names if missing.
+    """Ensure dataframe has a 'name' column, adding default names if missing.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame to process.
+    Args:
+        df: DataFrame to process.
 
-    Returns
-    -------
-    pd.DataFrame
+    Returns:
         DataFrame with 'name' column guaranteed to exist.
     """
     if "name" not in df.columns:

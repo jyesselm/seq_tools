@@ -1,4 +1,3 @@
-import pytest
 from seq_tools import dot_bracket
 
 

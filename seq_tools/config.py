@@ -1,5 +1,18 @@
-"""
-Configuration constants for seq_tools
+"""Configuration constants for seq_tools.
+
+This module defines nucleotide types, molecular weights, reverse complement
+mappings, and other constants used throughout seq_tools.
+
+Attributes:
+    T7_PROMOTER: Standard T7 RNA polymerase promoter sequence.
+    DEFAULT_DNA_NTS: List of standard DNA nucleotides.
+    DEFAULT_RNA_NTS: List of standard RNA nucleotides.
+    VALID_DNA_NTS: Set of valid DNA nucleotides including ambiguous bases.
+    VALID_RNA_NTS: Set of valid RNA nucleotides including ambiguous bases.
+    RNA_MW: Dictionary mapping RNA nucleotides to molecular weights in Daltons.
+    DNA_MW: Dictionary mapping DNA nucleotides to molecular weights in Daltons.
+    RC_DNA: Dictionary for DNA reverse complement mapping.
+    RC_RNA: Dictionary for RNA reverse complement mapping.
 """
 
 # T7 promoter sequence

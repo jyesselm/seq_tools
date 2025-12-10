@@ -1,0 +1,9 @@
+try to minmize the number of indents 3 levels max 
+keep most functions to 30 lines with few exceptiosn 
+One responsibility per function
+Prefer simple code over clever code
+use ruff, black, and mypy for code formatting and linting
+Prefer many small modules over giant files.
+Typical module target: 200–300 lines.
+all function should have docstring and type hints 
+pytest with atleast 90% coverage

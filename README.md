@@ -249,4 +249,31 @@ For commercial licensing inquiries, please contact jyesselm@unl.edu.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed coding standards and guidelines.
+
+### Quick Start for Contributors
+
+```bash
+# Install with dev dependencies
+make install
+
+# Run all quality checks
+make check
+
+# Individual checks
+make format      # Format code with ruff
+make lint        # Lint with ruff
+make type-check  # Type check with mypy
+make coverage    # Run tests with coverage (90% minimum)
+```
+
+### Code Standards
+
+- Maximum 3 levels of indentation
+- Functions ≤ 30 lines (with few exceptions)
+- One responsibility per function
+- All functions must have type hints and docstrings
+- Minimum 90% test coverage required
+- Use ruff, black, and mypy for code quality
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for complete details.

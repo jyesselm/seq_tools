@@ -1,9 +1,8 @@
-"""
-Utility functions for converting between sequences and DataFrames
-"""
+"""Utility functions for converting between sequences and DataFrames."""
 
-from typing import List, Dict, Optional
 from pathlib import Path
+from typing import Optional
+
 import pandas as pd
 
 try:
@@ -19,28 +18,23 @@ except ImportError:
         _HAS_FILES = True
     except ImportError:
         # Fallback for older Python or if importlib_resources not available
-        import os
 
         _HAS_FILES = False
 
 
 def get_resources_path() -> Path:
-    """
-    Get the path to the seq_tools resources directory.
+    """Get the path to the seq_tools resources directory.
 
     This function provides a reliable way to access package resource files
     whether the package is installed or run in development mode.
 
-    Returns
-    -------
-    Path
+    Returns:
         Path object pointing to the seq_tools/resources directory.
 
-    Examples
-    --------
-    >>> resource_path = get_resources_path()
-    >>> p5_file = resource_path / "p5_sequences.csv"
-    >>> df = pd.read_csv(p5_file)
+    Examples:
+        >>> resource_path = get_resources_path()
+        >>> p5_file = resource_path / "p5_sequences.csv"
+        >>> df = pd.read_csv(p5_file)
     """
     if _HAS_FILES:
         return Path(files("seq_tools")) / "resources"
@@ -53,57 +47,46 @@ def get_resources_path() -> Path:
 
 
 def sequence_to_dataframe(seq: str, name: str = "sequence") -> pd.DataFrame:
-    """
-    Convert a single sequence to a DataFrame.
+    """Convert a single sequence to a DataFrame.
 
-    Parameters
-    ----------
-    seq : str
-        The nucleotide sequence.
-    name : str, optional
-        Name for the sequence (default: "sequence").
+    Args:
+        seq: The nucleotide sequence.
+        name: Name for the sequence. Defaults to "sequence".
 
-    Returns
-    -------
-    pd.DataFrame
+    Returns:
         DataFrame with 'name' and 'sequence' columns.
 
-    Examples
-    --------
-    >>> df = sequence_to_dataframe("ATCG", name="seq1")
-    >>> len(df)
-    1
-    >>> df.iloc[0]['sequence']
-    'ATCG'
+    Examples:
+        >>> df = sequence_to_dataframe("ATCG", name="seq1")
+        >>> len(df)
+        1
+        >>> df.iloc[0]['sequence']
+        'ATCG'
     """
     return pd.DataFrame({"name": [name], "sequence": [seq]})
 
 
 def sequences_to_dataframe(
-    sequences: List[str], names: Optional[List[str]] = None
+    sequences: list[str], names: Optional[list[str]] = None
 ) -> pd.DataFrame:
-    """
-    Convert multiple sequences to a DataFrame.
+    """Convert multiple sequences to a DataFrame.
 
-    Parameters
-    ----------
-    sequences : List[str]
-        List of nucleotide sequences.
-    names : List[str], optional
-        List of names for sequences. If None, generates default names.
+    Args:
+        sequences: List of nucleotide sequences.
+        names: List of names for sequences. If None, generates default names.
 
-    Returns
-    -------
-    pd.DataFrame
+    Returns:
         DataFrame with 'name' and 'sequence' columns.
 
-    Examples
-    --------
-    >>> df = sequences_to_dataframe(["ATCG", "GCTA"])
-    >>> len(df)
-    2
-    >>> list(df['name'])
-    ['seq_0', 'seq_1']
+    Raises:
+        ValueError: If number of sequences and names don't match.
+
+    Examples:
+        >>> df = sequences_to_dataframe(["ATCG", "GCTA"])
+        >>> len(df)
+        2
+        >>> list(df['name'])
+        ['seq_0', 'seq_1']
     """
     if names is None:
         names = [f"seq_{i}" for i in range(len(sequences))]
@@ -115,25 +98,19 @@ def sequences_to_dataframe(
     return pd.DataFrame({"name": names, "sequence": sequences})
 
 
-def dataframe_to_sequences(df: pd.DataFrame) -> List[Dict[str, str]]:
-    """
-    Convert DataFrame to list of sequence dictionaries.
+def dataframe_to_sequences(df: pd.DataFrame) -> list[dict[str, str]]:
+    """Convert DataFrame to list of sequence dictionaries.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with 'name' and 'sequence' columns.
+    Args:
+        df: DataFrame with 'name' and 'sequence' columns.
 
-    Returns
-    -------
-    List[Dict[str, str]]
+    Returns:
         List of dictionaries with 'name' and 'sequence' keys.
 
-    Examples
-    --------
-    >>> df = pd.DataFrame({"name": ["seq1"], "sequence": ["ATCG"]})
-    >>> result = dataframe_to_sequences(df)
-    >>> result[0]['sequence']
-    'ATCG'
+    Examples:
+        >>> df = pd.DataFrame({"name": ["seq1"], "sequence": ["ATCG"]})
+        >>> result = dataframe_to_sequences(df)
+        >>> result[0]['sequence']
+        'ATCG'
     """
     return df.to_dict("records")

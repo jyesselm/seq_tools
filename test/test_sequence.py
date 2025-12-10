@@ -3,11 +3,11 @@ module to test sequence.py
 """
 
 from seq_tools.sequence import (
+    get_max_stretch,
+    get_molecular_weight,
+    get_reverse_complement,
     to_dna,
     to_rna,
-    get_reverse_complement,
-    get_molecular_weight,
-    get_max_stretch,
 )
 
 
