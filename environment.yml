@@ -10,8 +10,9 @@ dependencies:
   - click
   - tabulate
   - pytest
-  - black
-  - tox
+  - pytest-cov
+  - ruff
+  - mypy
   - pip:
     - wheel>=0.22
     - editdistance

@@ -67,10 +67,10 @@ print(df)
 
 ### Single Sequence Functions
 
-For single sequence operations, import from the `sequence` module:
+For single sequence operations, import directly from `seq_tools`:
 
 ```python
-from seq_tools.sequence import to_dna, to_rna, get_reverse_complement, get_molecular_weight
+from seq_tools import to_dna, to_rna, get_reverse_complement, get_molecular_weight
 
 # Convert sequences
 rna_seq = to_rna("ATCG")  # Returns "AUCG"
@@ -190,7 +190,7 @@ seq-tools to-opool input.csv "pool_name" output.xlsx
 The package provides comprehensive DataFrame operations:
 
 - **Conversion**: `to_dna_df()`, `to_rna_df()`, `to_dna_template_df()`
-- **Analysis**: `get_molecular_weight_df()`, `get_extinction_coeff()`, `get_length()`
+- **Analysis**: `get_molecular_weight_df()`, `get_extinction_coeff_df()`, `get_length()`
 - **Structure**: `fold()` - predict RNA secondary structures
 - **Manipulation**: `add()`, `trim()`, `get_reverse_complement_df()`
 - **Generation**: `generate_random_sequences()`, `generate_mutated_sequences()`
@@ -223,6 +223,30 @@ See the [notebooks README](notebooks/README.md) for more details.
 
 ## Development
 
+### Using Conda/Mamba (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/jyesselm/seq_tools.git
+cd seq_tools
+
+# Create conda environment from environment.yml
+conda env create -f environment.yml
+# OR using mamba (faster)
+mamba env create -f environment.yml
+
+# Activate environment
+conda activate seq_tools
+
+# Install package in editable mode
+pip install -e .
+
+# Run tests
+pytest test/ -v
+```
+
+### Using pip/venv
+
 ```bash
 # Clone the repository
 git clone https://github.com/jyesselm/seq_tools.git
@@ -232,12 +256,14 @@ cd seq_tools
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install in editable mode
+# Install dependencies and package
 pip install -e .
 
 # Run tests
 pytest test/ -v
 ```
+
+**Note**: ViennaRNA is required for structure prediction. It's included in the conda environment, but for pip installations you may need to install it separately via conda or your system package manager.
 
 ## License
 
