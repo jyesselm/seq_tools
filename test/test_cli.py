@@ -57,7 +57,7 @@ def test_molecular_weight():
     result = runner.invoke(cli.mw, ["GGGGTTTTCCCC"])
     assert result.exit_code == 0
     lines = result.output.splitlines()
-    assert lines[-2] == "mw                3906.4"
+    assert lines[-2] == "molecular_weight          3906.4"
 
 
 def test_to_dna_single():

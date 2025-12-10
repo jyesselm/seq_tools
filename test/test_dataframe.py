@@ -179,7 +179,7 @@ def test_get_molecular_weight_rna():
     """
     df = pd.DataFrame([["seq_0", "AUG"]], columns=["name", "sequence"])
     df = get_molecular_weight(df, "RNA", False)
-    assert df["mw"][0] == 1034.6
+    assert df["molecular_weight"][0] == 1034.6
 
 
 def test_reverse_complement():

@@ -85,10 +85,10 @@ def get_molecular_weight(
         double_stranded: Whether sequences are double-stranded.
 
     Returns:
-        DataFrame with added 'mw' column containing molecular weights.
+        DataFrame with added 'molecular_weight' column containing molecular weights.
     """
     df = df.copy()
-    df["mw"] = df["sequence"].apply(
+    df["molecular_weight"] = df["sequence"].apply(
         lambda x: sequence.get_molecular_weight(x, ntype, double_stranded)
     )
     return df

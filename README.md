@@ -3,7 +3,9 @@
 [![PyPI version](https://badge.fury.io/py/rna_seq_tools.svg)](https://badge.fury.io/py/rna_seq_tools)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/jyesselm/seq_tools/actions/workflows/tests.yml/badge.svg)](https://github.com/jyesselm/seq_tools/actions)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](https://github.com/jyesselm/seq_tools)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Type checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](https://github.com/python/mypy)
 [![License](https://img.shields.io/badge/license-Non--Commercial-red.svg)](LICENSE)
 
 A Python package for manipulating and analyzing nucleic acid sequences (DNA and RNA) in pandas DataFrames.
@@ -274,6 +276,6 @@ make coverage    # Run tests with coverage (90% minimum)
 - One responsibility per function
 - All functions must have type hints and docstrings
 - Minimum 90% test coverage required
-- Use ruff, black, and mypy for code quality
+- Use ruff and mypy for code quality
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for complete details.

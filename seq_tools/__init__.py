@@ -10,6 +10,7 @@ __author__ = "Joe Yesselman"
 __email__ = "jyesselm@unl.edu"
 __version__ = "0.10.0"
 
+# Single sequence functions
 # Single sequence functions available via submodule
 from . import extinction_coeff
 
@@ -25,7 +26,7 @@ from .config import (
 )
 
 # DataFrame-level functions (for batch operations)
-# Note: These are imported from the dataframe package (refactored from single module)
+# Import with _df suffix to avoid name conflicts with single-sequence functions
 from .dataframe import (
     add,
     calc_edit_distance,
@@ -34,21 +35,42 @@ from .dataframe import (
     fold,
     generate_mutated_sequences,
     generate_random_sequences,
-    get_extinction_coeff,
     get_length,
-    get_molecular_weight,
-    get_reverse_complement,
     has_3p_sequence,
     has_5p_sequence,
     has_sequence,
     has_t7_promoter,
-    to_dna,
-    to_dna_template,
     to_fasta,
     to_opool,
-    to_rna,
     transcribe,
     trim,
+)
+from .dataframe import (
+    get_extinction_coeff as get_extinction_coeff_df,
+)
+from .dataframe import (
+    get_molecular_weight as get_molecular_weight_df,
+)
+from .dataframe import (
+    get_reverse_complement as get_reverse_complement_df,
+)
+from .dataframe import (
+    to_dna as to_dna_df,
+)
+from .dataframe import (
+    to_dna_template as to_dna_template_df,
+)
+from .dataframe import (
+    to_rna as to_rna_df,
+)
+from .extinction_coeff import get_extinction_coeff as get_extinction_coeff_seq
+from .sequence import (
+    get_max_stretch,
+    get_molecular_weight,
+    get_reverse_complement,
+    to_dna,
+    to_dna_template,
+    to_rna,
 )
 
 # Utility functions
@@ -72,8 +94,15 @@ __all__ = [
     "__version__",
     "__author__",
     "__email__",
-    # Single sequence functions (via submodule)
+    # Single sequence functions
+    "to_dna",
+    "to_rna",
+    "to_dna_template",
+    "get_reverse_complement",
+    "get_molecular_weight",
+    "get_max_stretch",
     "extinction_coeff",
+    "get_extinction_coeff_seq",
     # DataFrame-level functions (batch operations)
     "add",
     "fold",
@@ -82,9 +111,6 @@ __all__ = [
     "to_opool",
     "transcribe",
     "determine_ntype",
-    "get_extinction_coeff",
-    "get_molecular_weight",
-    "get_reverse_complement",
     "get_length",
     "calc_edit_distance",
     "calc_edit_distance_parallel",
@@ -94,9 +120,12 @@ __all__ = [
     "has_5p_sequence",
     "has_3p_sequence",
     "has_sequence",
-    "to_dna",
-    "to_rna",
-    "to_dna_template",
+    "to_dna_df",
+    "to_rna_df",
+    "to_dna_template_df",
+    "get_molecular_weight_df",
+    "get_extinction_coeff_df",
+    "get_reverse_complement_df",
     # Utility functions
     "sequence_to_dataframe",
     "sequences_to_dataframe",
