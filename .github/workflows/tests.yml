@@ -35,22 +35,6 @@ jobs:
         pip install -e .
       shell: micromamba-shell {0}
 
-    - name: Lint with ruff
-      run: |
-        ruff check seq_tools/ test/
-      shell: micromamba-shell {0}
-
-    - name: Format check with ruff
-      run: |
-        ruff format --check seq_tools/ test/
-      shell: micromamba-shell {0}
-
-    - name: Type check with mypy
-      run: |
-        mypy seq_tools/
-      shell: micromamba-shell {0}
-      continue-on-error: true
-
     - name: Run tests with pytest
       run: |
         pytest test/ -v --tb=short --cov=seq_tools --cov-report=term-missing --cov-report=xml --cov-fail-under=90
@@ -66,3 +50,76 @@ jobs:
         fail_ci_if_error: false
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: '1.5.8-0'
+        environment-file: environment.yml
+        init-shell: bash
+        cache-environment: true
+        post-cleanup: 'all'
+
+    - name: Install package
+      run: |
+        pip install -e .
+      shell: micromamba-shell {0}
+
+    - name: Lint with ruff
+      run: |
+        ruff check seq_tools/ test/
+      shell: micromamba-shell {0}
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: '1.5.8-0'
+        environment-file: environment.yml
+        init-shell: bash
+        cache-environment: true
+        post-cleanup: 'all'
+
+    - name: Install package
+      run: |
+        pip install -e .
+      shell: micromamba-shell {0}
+
+    - name: Format check with ruff
+      run: |
+        ruff format --check seq_tools/ test/
+      shell: micromamba-shell {0}
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: '1.5.8-0'
+        environment-file: environment.yml
+        init-shell: bash
+        cache-environment: true
+        post-cleanup: 'all'
+
+    - name: Install package
+      run: |
+        pip install -e .
+      shell: micromamba-shell {0}
+
+    - name: Type check with mypy
+      run: |
+        mypy seq_tools/
+      shell: micromamba-shell {0}
+      continue-on-error: true

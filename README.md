@@ -47,20 +47,21 @@ seq-tools mw "ATCG"
 
 ```python
 import pandas as pd
-from seq_tools import sequences_to_dataframe, fold, get_molecular_weight_df, to_rna_df
+from seq_tools import sequences_to_dataframe
+from seq_tools.dataframe import to_rna, fold, get_molecular_weight
 
 # Create a DataFrame from sequences
 sequences = ["ATCG", "GCTA", "AAAA"]
 df = sequences_to_dataframe(sequences)
 
 # Convert to RNA
-df = to_rna_df(df)
+df = to_rna(df)
 
 # Fold RNA sequences
 df = fold(df)
 
 # Calculate molecular weights
-df = get_molecular_weight_df(df, "RNA", double_stranded=False)
+df = get_molecular_weight(df, "RNA", double_stranded=False)
 
 print(df)
 ```
@@ -187,15 +188,22 @@ seq-tools to-opool input.csv "pool_name" output.xlsx
 
 ## DataFrame Functions
 
-The package provides comprehensive DataFrame operations:
+The package provides comprehensive DataFrame operations via `seq_tools.dataframe`:
 
-- **Conversion**: `to_dna_df()`, `to_rna_df()`, `to_dna_template_df()`
-- **Analysis**: `get_molecular_weight_df()`, `get_extinction_coeff_df()`, `get_length()`
+- **Conversion**: `to_dna()`, `to_rna()`, `to_dna_template()`
+- **Analysis**: `get_molecular_weight()`, `get_extinction_coeff()`, `get_length()`
 - **Structure**: `fold()` - predict RNA secondary structures
-- **Manipulation**: `add()`, `trim()`, `get_reverse_complement_df()`
+- **Manipulation**: `add()`, `trim()`, `get_reverse_complement()`
 - **Generation**: `generate_random_sequences()`, `generate_mutated_sequences()`
 - **Validation**: `has_t7_promoter()`, `has_5p_sequence()`, `has_3p_sequence()`
 - **File I/O**: `to_fasta()`, `to_opool()`
+
+```python
+from seq_tools.dataframe import to_rna, fold, get_molecular_weight
+# Use with DataFrames containing a 'sequence' column
+```
+
+**Note**: For backward compatibility, functions are also available with `_df` suffix from the main package (e.g., `from seq_tools import to_rna_df`), but the recommended approach is to import from `seq_tools.dataframe`.
 
 See the [notebooks](notebooks/) directory for detailed examples.
 
