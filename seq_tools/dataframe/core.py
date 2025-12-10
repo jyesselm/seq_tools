@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Optional
 
 import pandas as pd
 import vienna
@@ -132,7 +133,7 @@ def _trim_list_column(column: pd.Series, start: int, end: int) -> pd.Series:
 
 
 def trim(
-    df: pd.DataFrame, start: int, end: int, extra_columns: list[str] | None = None
+    df: pd.DataFrame, start: int, end: int, extra_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """Trim the sequence and other columns to the given start and end indices.
 

@@ -1,5 +1,7 @@
 """Primer and common sequence handling for dataframes."""
 
+from typing import List, Optional
+
 import pandas as pd
 import vienna
 
@@ -135,7 +137,7 @@ def find_longest_common_suffix(df: pd.DataFrame) -> str:
 
 
 def trim_p5_and_p3(
-    df: pd.DataFrame, extra_columns: list[str] | None = None
+    df: pd.DataFrame, extra_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """Trim the 5' and 3' ends of the data in the DataFrame.
 
@@ -173,7 +175,7 @@ def trim_p5_and_p3(
 
 
 def remove_common_p5_p3(
-    df: pd.DataFrame, extra_columns: list[str] | None = None
+    df: pd.DataFrame, extra_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """Identify and remove common 5' and 3' sequences from the DataFrame.
 
@@ -280,7 +282,7 @@ def _check_p3_match(df: pd.DataFrame, p3_seq: str, p3_struct: str) -> tuple[bool
 
 
 def remove_common_p5_p3_by_structure(
-    df: pd.DataFrame, extra_columns: list[str] | None = None
+    df: pd.DataFrame, extra_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """Identify and remove common 5' and 3' sequences based on both sequence and structure.
 
@@ -373,7 +375,7 @@ def _generate_match_warnings(
 
 
 def remove_common_seqs(
-    df: pd.DataFrame, extra_columns: list[str] | None = None
+    df: pd.DataFrame, extra_columns: Optional[List[str]] = None
 ) -> tuple[pd.DataFrame, dict]:
     """Identify and remove common 5' and 3' sequences, checking both sequence and structure.
 
