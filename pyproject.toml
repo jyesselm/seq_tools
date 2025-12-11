@@ -38,8 +38,9 @@ dependencies = [
 [project.scripts]
 seq-tools = "seq_tools.cli:cli"
 
-[tool.setuptools]
-packages = ["seq_tools"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["seq_tools*"]
 
 [tool.setuptools.package-data]
 seq_tools = [
